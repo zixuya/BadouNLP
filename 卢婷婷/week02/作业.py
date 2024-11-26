@@ -26,7 +26,7 @@ class TorchModel(nn.Module):
         if y is not None:
             return self.loss(logits, y)  # 计算交叉熵损失
         else:
-            return logits  # 输出预测结果（logits）
+            return logits 
 
 # 生成一个样本, 样本的生成方法代表了我们要学习的规律
 # 这里我们随机生成一个5维向量，并随机分配一个0-4的类别标签
@@ -111,7 +111,7 @@ def predict(model_path, input_vec):
         logits = model.forward(torch.FloatTensor(input_vec))  # 模型预测
         _, predicted = torch.max(logits, 1)  # 获取预测类别
     for vec, pred in zip(input_vec, predicted):
-        print("输入：%s, 预测类别：%d" % (vec, pred.item()))  # 打印结果
+        print("输入：%s, 预测类别：%d" % (vec, pred.item())) 
 
 if __name__ == "__main__":
     main()
