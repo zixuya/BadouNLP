@@ -49,4 +49,4 @@ test_data_tensor = torch.from_numpy(test_data).float()
 predictions = model(test_data_tensor)
 predicted_labels = torch.argmax(predictions, dim=1).numpy()
 
-print("Test data predictions:", predicted_labels)
+print("预测数据:", predicted_labels)
