@@ -41,7 +41,7 @@ class TorchModel(nn.Module):
 # 生成一个样本
 def build_sample():
     """
-    随机生成一个5维向量，如果第一个值大于第五个值，认为是正样本，反之为负样本
+    随机生成一个5维向量
     :return: 样本向量和对应的标签
     """
     x = torch.randn(5)
