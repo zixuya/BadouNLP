@@ -20,17 +20,21 @@ class TorchModel(nn.Module):
     def __init__(self, vector_dim, sentence_length, vocab):
         super(TorchModel, self).__init__()
         self.embedding = nn.Embedding(len(vocab), vector_dim, padding_idx=0)  # embedding层
-        self.rnn = nn.RNN(vector_dim, 32)  # RNN
-        self.classify = nn.Linear(32, sentence_length)  # 线性层
-        # self.activation = torch.sigmoid  # sigmoid归一化函数
-        self.loss = nn.functional.cross_entropy  # loss函数采用均方差损失
+        self.rnn = nn.RNN(
+            input_size=vector_dim,
+            hidden_size=vector_dim,
+            num_layers=1,
+            batch_first=True,
+        )  # RNN层
+        self.classify = nn.Linear(vector_dim, sentence_length + 1)  # 分类头，用于多分类任务
+        self.activation = nn.Softmax(dim=1)  # Softmax归一化函数
+        self.loss = nn.CrossEntropyLoss()  # 损失函数采用交叉熵损失
 
-    # 当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, y=None):
         x = self.embedding(x)  # (batch_size, sen_len) -> (batch_size, sen_len, vector_dim)
-        rnn_out, _ = self.rnn(x)  # (batch_size, sen_len, hidden size)
-        x = rnn_out[:, -1, :]  # 取最后一个时间步的隐藏状态 (batch_size, hidden size)
-        y_pred = self.classify(x)  # (batch_size, hidden size) -> (batch_size, sentence_length + 1)
+        rnn_out, _ = self.rnn(x)  # (batch_size, sen_len, vector_dim)
+        x = rnn_out[:, -1, :]  # 取最后一个时间步的隐藏状态 (batch_size, vector_dim)
+        y_pred = self.classify(x)  # (batch_size, vector_dim) -> (batch_size, sentence_length + 1)
         # y_pred = self.activation(x)  # (batch_size, sentence_length + 1)
         if y is not None:
             return self.loss(y_pred, y)  # 预测值和真实值计算损失
@@ -123,7 +127,7 @@ def main():
     batch_size = 70  # 每次训练样本个数
     train_sample = 5000  # 每轮训练总共训练的样本总数
     char_dim = 20  # 每个字的维度
-    sentence_length = 6 # 样本文本长度
+    sentence_length = 6  # 样本文本长度
     learning_rate = 0.001  # 学习率
     # 建立字表
     vocab = build_vocab()
@@ -177,11 +181,11 @@ def predict(model_path, vocab_path, input_strings):
         probability_labels = torch.softmax(result, dim=1)
     for vec, res, prob in zip(x, pred_labels, probability_labels):
         prob_value = prob[res].item()  # 获取该类别的概率值
-        print("输入：%s, 预测类别：%d, 概率值：%f" % (vec, res.item(), prob_value)) # 打印结果
+        print("输入：%s, 预测类别：%d, 概率值：%f" % (vec, res.item(), prob_value))  # 打印结果
 
 
 if __name__ == "__main__":
     main()
     # test_strings = ["n我l", "z我d", "rd我", "我lw"]
-    test_strings = ["fn我fey", "wz我dfv", "rqgwd我", "nkwwl我"]
+    test_strings = ["fnk我ey", "wzv我fv", "rq我wdh", "nkwwl我"]
     predict("model.pth", "vocab.json", test_strings)
