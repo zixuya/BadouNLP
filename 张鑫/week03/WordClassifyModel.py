@@ -29,11 +29,11 @@ class WordClassifyModel(nn.Module):
 
 # 构造vocab词表
 def build_vocab():
-    char_dict = '我你他学习爱'
+    char_dict = '我你他学习'
     vocab = {'[pad]': 0}
     for i, item in enumerate(char_dict):
         vocab[item] = i + 1
-    vocab['unk'] = len(char_dict)
+    vocab['unk'] = len(char_dict)+1
     return vocab
 
 
