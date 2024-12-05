@@ -19,21 +19,21 @@ class TorchModel(nn.Module):
     def __init__(self, vector_dim, sentence_length, vocab):
         super(TorchModel, self).__init__()
         self.embedding = nn.Embedding(len(vocab), vector_dim, padding_idx=0)  #embedding层
-        self.classify = nn.RNN(vector_dim, 7, batch_first=True)     #RNN层
-
+        self.classify = nn.RNN(vector_dim, 128, batch_first=True)     #RNN层, 设定hidden_size=128
+        self.linear = nn.Linear(128, 7)    #线性层, 最终输出维度为7(类别总数)
         self.loss = nn.functional.cross_entropy  # loss函数采用交叉熵
 
     #当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, y=None):
         x = self.embedding(x)                      #(batch_size, sen_len) -> (batch_size, sen_len, vector_dim)
-        y_pred, _ = self.classify(x)                  #(batch_size, sen_len, vector_dim) -> (batch_size, sen_len, 1)
+        y_pred, _ = self.classify(x)                  #(batch_size, sen_len, vector_dim) -> (batch_size, sen_len, hidden_size)
         y_pred = y_pred[:, -1, :]
+        y_pred = self.linear(y_pred)                #(batch_size, sen_len, hidden_size) -> (batch_size, sen_len, 7)
         if y is not None:
             return self.loss(y_pred, y)   #预测值和真实值计算损失
         else:
             return torch.softmax(y_pred, dim=1)  #输出预测结果
 
-#字符集随便挑了一些字，实际上还可以扩充
 #为每个字生成一个标号
 #{"a":1, "b":2, "c":3...}
 #abc -> [1,2,3]
@@ -47,48 +47,25 @@ def build_vocab():
 
 #随机生成一个样本
 #从所有字中选取sentence_length个字
-#反之为负样本
-def build_sample(vocab, sentence_length, target_class=None):
-    # 随机从字表选取sentence_length个字，可能重复
+def build_sample(vocab, sentence_length):
+    #随机从字表选取sentence_length个字，可能重复
     x = [random.choice(list(vocab.keys())) for _ in range(sentence_length)]
-
-    if target_class is not None:
-        if target_class < 6:
-            # 确保'你'在指定的位置
-            x[target_class] = '你'
-        else:
-            # 确保没有'你'
-            while '你' in x:
-                x.remove('你')
-                x.append(random.choice(list(vocab.keys())))
-
-    # 如果没有指定target_class或'你'不在句子中，标签为5
-    y = 6 if target_class is None or target_class == 6 or '你' not in x else x.index('你')
-
-    # 将字转换成序号，为了做embedding
-    x = [vocab.get(word, vocab['unk']) for word in x]
+    #指定哪些字出现时为正样本
+    try:
+        y = x.index('你')
+    except ValueError:
+        y = 6
+    x = [vocab.get(word, vocab['unk']) for word in x]   #将字转换成序号，为了做embedding
     return x, y
 
 
 def build_dataset(sample_length, vocab, sentence_length):
     dataset_x = []
     dataset_y = []
-    classes = [0, 1, 2, 3, 4, 5, 6]
-    samples_per_class = sample_length // len(classes)
-
-    for class_idx in classes:
-        for _ in range(samples_per_class):
-            x, y = build_sample(vocab, sentence_length, target_class=class_idx)
-            dataset_x.append(x)
-            dataset_y.append(y)
-
-    # 填充剩余的样本（如果sample_length不是6的倍数）
-    remaining_samples = sample_length % len(classes)
-    for _ in range(remaining_samples):
+    for i in range(sample_length):
         x, y = build_sample(vocab, sentence_length)
         dataset_x.append(x)
         dataset_y.append(y)
-
     return torch.LongTensor(dataset_x), torch.LongTensor(dataset_y)
 
 
@@ -126,9 +103,9 @@ def evaluate(model, vocab, sample_length):
 
 def main():
     #配置参数
-    epoch_num = 20        #训练轮数
-    batch_size = 20       #每次训练样本个数
-    train_sample = 5000    #每轮训练总共训练的样本总数
+    epoch_num = 10        #训练轮数
+    batch_size = 50       #每次训练样本个数
+    train_sample = 500    #每轮训练总共训练的样本总数
     char_dim = 20         #每个字的维度
     sentence_length = 6   #样本文本长度
     learning_rate = 0.005 #学习率
@@ -180,10 +157,10 @@ def predict(model_path, vocab_path, input_strings):
     with torch.no_grad():  #不计算梯度
         result = model.forward(torch.LongTensor(x))  #模型预测
     for i, input_string in enumerate(input_strings):
-        res = result[i]
-        res_class = torch.argmax(result[i])
-        # res_prob = res[res_class]
-        print("输入：%s, 预测类别：%s, 概率值：%s" % (input_string, res_class, res)) #打印结果
+        res = result[i].numpy()
+        res_class = np.argmax(result[i])
+        res_prob = res[res_class]
+        print("输入：%s, 预测类别：%d, 概率值：%f" % (input_string, res_class, res_prob)) #打印结果
 
 
 
