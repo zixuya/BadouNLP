@@ -20,7 +20,7 @@ class TorchModel(nn.Module):
         super(TorchModel, self).__init__()
         self.embedding = nn.Embedding(len(vocab), vector_dim, padding_idx=0)  #embedding层
         self.rnn = nn.RNN(vector_dim, hidden_size, bias=False, batch_first=True)  #rnn层
-        self.loss = nn.functional.cross_entropy  #loss函数采用均方差损失
+        self.loss = nn.functional.cross_entropy  #loss函数采用交叉熵损失
 
     #当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, y=None):
