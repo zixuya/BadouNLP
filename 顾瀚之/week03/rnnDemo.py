@@ -21,9 +21,9 @@ class TorchModel(nn.Module):
         super(TorchModel, self).__init__()
         self.embedding = nn.Embedding(len(vocab), vector_dim, padding_idx=0)  #embedding层
         self.rnn = nn.RNN(vector_dim, hidden_size, batch_first=True)
-        self.classify = nn.Linear(hidden_size, sentence_length)  #线性层
+        self.classify = nn.Linear(hidden_size, sentence_length+1)  #线性层
         self.loss = nn.functional.cross_entropy  #loss函数采用均方差损失
-        self.activation = torch.sigmoid
+        self.activation = torch.softmax
 
     #当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, y=None):
@@ -35,7 +35,7 @@ class TorchModel(nn.Module):
         if y is not None:
             return self.loss(y_pred, y)  #预测值和真实值计算损失
         else:
-            return self.activation(y_pred)  #输出预测结果
+            return self.activation(y_pred, dim=1)  #输出预测结果
 
 
 #字符集随便挑了一些字，实际上还可以扩充
@@ -65,11 +65,13 @@ def build_sample(vocab, sentence_length):
         y = 0
     # print(x)
     x = [vocab.get(word, vocab['unk']) for word in x]  #将字转换成序号，为了做embedding
-    y_out = np.zeros(sentence_length)
+    y_out = np.zeros(sentence_length+1)
     if y == 1:
         for i in range(sentence_length):
             if x[i] == vocab['你']:
                 y_out[i] = 1
+    else:
+        y_out[sentence_length] = 1
     # print(x)
     # print(y_out)
     return x, y_out
@@ -102,9 +104,7 @@ def evaluate(model, vocab, sample_length):
     with torch.no_grad():
         y_pred = model(x)  #模型预测
         for y_p, y_t in zip(y_pred, y):  #与真实标签进行对比
-            if y_p[np.argmax(y_p)] > 0.9 and y_t[np.argmax(y_p)] == 1:
-                correct += 1  # 判断正确
-            elif y_p[np.argmax(y_p)] <= 0.9 and sum(y_t) == 0:
+            if np.argmax(y_t) == np.argmax(y_p):
                 correct += 1  # 判断正确
             else:
                 wrong += 1
@@ -117,7 +117,7 @@ def evaluate(model, vocab, sample_length):
 
 def main():
     #配置参数
-    epoch_num = 50  #训练轮数
+    epoch_num = 20  #训练轮数
     batch_size = 20  #每次训练样本个数
     train_sample = 500  #每轮训练总共训练的样本总数
     char_dim = 20  #每个字的维度
