@@ -162,7 +162,7 @@ def predict(model_path, vocab_path, input_strings):
     for i, input_string in enumerate(input_strings):
         # print("样本输入：%s, 预测类别：%s, 概率值：%s" % (input_string, round(float(result[i])), result[i])) #打印结果
         print("输入：%s, 预测类别：%s, 类别概率：%s" % (input_string, torch.argmax(result[i]), result[i]))
-
+ 
 
 if __name__ == "__main__":
     main()
