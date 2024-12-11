@@ -1,6 +1,5 @@
 # coding:utf8
 
-from turtle import xcor
 import torch
 import torch.nn as nn
 import numpy as np
@@ -11,7 +10,7 @@ import matplotlib.pyplot as plt
 
 基于pytorch框架编写模型训练
 实现一个自行构造的找规律(机器学习)任务
-规律：x是一个5维向量，哪个数最大就属于第几类
+规律：x是一个5维向量，如果第1个数>第5个数，则为正样本，反之为负样本
 
 """
 
@@ -20,13 +19,12 @@ class TorchModel(nn.Module):
 
     def __init__(self, input_size):
         super(TorchModel, self).__init__()
-        self.linear = nn.Linear(input_size, 5)  # 线性层，输出为五维样本
-        self.loss = nn.CrossEntropyLoss()  # loss函数采用交叉熵损失
+        self.linear = nn.Linear(input_size, 5)  # 线性层，输出为张量
+        self.loss = nn.functional.cross_entropy  # loss函数采用交叉熵损失 nn.CrossEntropyLoss()
 
     # 当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, y=None):
-        x = self.linear(x)  # (batch_size, input_size) -> (batch_size, 1)
-        y_pred = torch.argmax(x, dim=1)
+        y_pred = self.linear(x)  # (batch_size, input_size) -> (batch_size, 1)
         if y is not None:
             return self.loss(y_pred, y)  # 预测值和真实值计算损失
         else:
@@ -34,21 +32,23 @@ class TorchModel(nn.Module):
 
 
 # 生成一个样本, 样本的生成方法，代表了我们要学习的规律
-# 随机生成一个5维向量，哪个数最大就属于第几类
+# 随机生成一个5维向量，根据向量的最大标量的下标构建Y
 def build_sample():
     x = np.random.random(5)
-    return x, np.argmax(x)
+    y = np.argmax(x)  # <class 'numpy.int64'> 不是int
+    return x, y
 
 
 # 随机生成一批样本
+# 正负样本均匀生成
 def build_dataset(total_sample_num):
-    X = []
-    Y = []
+    X = []  # type(X) <class 'list'>
+    Y = []  # type(Y) <class 'list'>
     for i in range(total_sample_num):
         x, y = build_sample()
-        X.append(x)
-        Y.append([y])
-    return torch.FloatTensor(X), torch.FloatTensor(Y)
+        X.append(x)  # type(x) <class 'numpy.ndarray'>
+        Y.append(y)  # type(y) <class 'numpy.int64'>
+    return torch.FloatTensor(X), torch.LongTensor(Y)  # <class 'torch.Tensor'> 注意Y是Long型
 
 
 # 测试代码
@@ -61,8 +61,8 @@ def evaluate(model):
     with torch.no_grad():
         y_pred = model(x)  # 模型预测 model.forward(x)
         for y_p, y_t in zip(y_pred, y):  # 与真实标签进行对比
-            if int(y_p) == int(y_t):
-                correct += 1  # 样本判断正确
+            if torch.argmax(y_p) == int(y_t):
+                correct += 1
             else:
                 wrong += 1
     print("正确预测个数：%d, 正确率：%f" % (correct, correct / (correct + wrong)))
@@ -127,8 +127,8 @@ def predict(model_path, input_vec):
 
 if __name__ == "__main__":
     main()
-    # test_vec = [[0.97889086,0.15229675,0.31082123,0.03504317,0.88920843],
-    #             [0.74963533,0.5524256,0.95758807,0.95520434,0.84890681],
-    #             [0.00797868,0.67482528,0.13625847,0.34675372,0.19871392],
-    #             [0.09349776,0.59416669,0.92579291,0.41567412,0.1358894]]
-    # predict("model.pt", test_vec)
+    test_vec = [[0.97889086, 0.15229675, 0.31082123, 0.03504317, 0.88920843],
+                [0.74963533, 0.5524256, 0.95758807, 0.95520434, 0.84890681],
+                [0.00797868, 0.67482528, 0.13625847, 0.34675372, 0.19871392],
+                [0.09349776, 0.59416669, 0.92579291, 0.41567412, 0.1358894]]
+    predict("model.bin", test_vec)
