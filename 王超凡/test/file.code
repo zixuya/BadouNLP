@@ -1,0 +1,4 @@
+if x > 10 then
+    y = 10
+else
+    y = 0
