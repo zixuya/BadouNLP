@@ -2,3 +2,4 @@ if x < 0 then
     y = 10
 else
     y = 100
+print("hello")
