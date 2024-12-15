@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 import numpy
+import matplotlib.pyplot as pyplot
+import json
 
 #用RNN和交叉熵完成一个多分类任务，判断某字符字符串的哪一个位置
 #字符串由小写字母和*号组成，任务是判断*号的位置，保证每个字符串有且仅有一个*号
@@ -41,6 +43,7 @@ g_vocab = {
     "*" : 27,
     "[unk]" : 28
 }
+g_evaluate_size = 50 #测试集合大小
 
 #构建样本，长度固定10，由小写字母和*号组成，有且仅有1个*号
 def build_sample():
@@ -82,6 +85,16 @@ class TorchModel(nn.Module):
         else:
             return y_pred
 
+def evaluate(model):
+    model.eval()
+    x, y = build_dataset(g_evaluate_size)
+    with torch.no_grad():
+        y_pred = model(x)
+        correct = 0
+        for index, pred_tensor in enumerate(y_pred):
+            if y[index] == torch.argmax(pred_tensor):
+                correct += 1
+    return correct/g_evaluate_size
 
 def main():
     epoch_num = 20
@@ -92,28 +105,28 @@ def main():
     #优化器
     optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
     #开始训练
+    log = []
     for epoch in range(epoch_num):
         model.train()
+        watch_loss = []
         for batch in range(train_sample // batch_size):
             x, y_true = build_dataset(batch_size)
             optim.zero_grad()
             loss = model.forward(x, y_true)
             loss.backward()
             optim.step()
-    #检验模型正确率
-    model.eval()
-    X, Y = build_dataset(100)
-    with torch.no_grad():
-        result = model.forward(X)
-    count = 0
-    correct = 0
-    for index, pred_tensor in enumerate(result):
-        count += 1
-        y_pred = torch.argmax(pred_tensor)
-        if y_pred == Y[index]:
-            correct += 1
-    print("预测样本%d个，正确%d个，正确率%f"%(count, correct, correct/count))
-
+            watch_loss.append(loss.item())
+        print("第%d轮训练，平均loss=%f"%(epoch, numpy.mean(watch_loss)))
+        acc = evaluate(model)
+        log.append([acc, numpy.mean(watch_loss)])
+    pyplot.plot(range(len(log)), [i[0] for i in log], color="blue", label="acc")
+    pyplot.plot(range(len(log)), [i[1] for i in log], color="red", label="loss")
+    pyplot.legend()
+    pyplot.show()
+    torch.save(model.state_dict(), "model.pth")
+    writer = open("vocab.json", "w", encoding="utf8")
+    writer.write(json.dumps(g_vocab, ensure_ascii=False, indent=2))
+    writer.close()
 
 if __name__ == "__main__":
     main()
