@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 基于pytorch框架编写模型训练
 实现一个自行构造的找规律(机器学习)任务
 规律：x是一个5维向量，如果第1个数>第5个数，则为正样本，反之为负样本
+nn.CrossEntropyLoss() 的输入要求：
+输入张量 (logits)：通常是一个形状为 (batch_size, num_classes) 的二维张量，表示每个样本属于各个类别的未归一化的预测分数。
+标签张量 (target)：通常是一个形状为 (batch_size) 的一维张量，包含每个样本的类别索引（不是 one-hot 编码）。
 
 """
 
