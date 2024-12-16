@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 """
 
 基于pytorch的网络编写
-实现一个网络完成一个简单nlp任务
+实现一个自行构造的找规律(机器学习)任务
 输入一个字符串，根据字符a所在位置进行分类
 
 """
@@ -23,22 +23,23 @@ class TorchModel(nn.Module):
         # embedding层，每个字符转化成向量，拼在一起成为一个矩阵len(vocab)*vector_dim
         self.embedding = nn.Embedding(len(vocab), vector_dim)
         # self.pool = nn.AvgPool1d(sentence_length)  #池化层，矩阵转化成向量，vector_dim*1
-        self.rnn = nn.RNN(vector_dim, vector_dim,
-                          batch_first=True)  # embedding后第一维就是batch_size
-        # ???+1的原因是可能出现a不存在的情况，那时的真实label在构造数据时设为了sentence_length
-        self.classify = nn.Linear(vector_dim, 1)
-        self.loss = nn.functional.cross_entropy  #loss函数采用均方差损失
+        # 默认第一维是batch_size，另两个参数自由指定，hidden_size决定了输出的维度
+        self.rnn = nn.RNN(vector_dim, vector_dim, batch_first=True)
+        # 线性层输出class_num分类类别数量，可能出现a不存在的情况：真实label构造数据时设为了sentence_length，故分类+1
+        self.classify = nn.Linear(vector_dim, sentence_length + 1)
+        self.loss = nn.functional.cross_entropy  #loss函数采用交叉熵损失
 
     #当输入真实标签，返回loss值；无真实标签，返回预测值
     # batch_size 样本量，sen_len 样本长度， vector_dim 每个字符维度
     def forward(self, x, y=None):
-        x = self.embedding(x)
+        x = self.embedding(x)  # batch_size, sen_len, vector_dim
         # x = x.transpose(1, 2)
         # x = self.pool(x)
         # x = x.squeeze()
         rnn_out, hidden = self.rnn(x)
-        x = rnn_out[:, -1, :]  # ???
-        #??? x= hidden.squeeze() # 移除张量形状中所有大小为1的维度
+        # 取最后一个字对应的向量，rnn.shape=batch_size, sen_len, vector_dim
+        x = rnn_out[:, -1, :]
+        # x= hidden.squeeze() # hidden.shape=batch_size, 1, vector_dim 不推荐这个方法
         y_pred = self.classify(x)
         if y is not None:
             return self.loss(y_pred, y)  #预测值和真实值计算损失
@@ -62,7 +63,7 @@ def build_vocab():
 #随机生成一个样本
 #从所有字中选取sentence_length个字
 def build_sample(vocab, sentence_length):
-    #sample，是不放回的采样，每个字母不会重复出现，但是要求字符串长度要小于词表长度
+    # sample，是不放回的采样，每个字母不会重复出现，但是要求字符串长度要小于词表长度
     # sample(list,k) 返回一个长度为k的新列表，新列表存放从list中选取的k个随机唯一的元素
     x = random.sample(list(vocab.keys()), sentence_length)
     if "a" in x:
@@ -78,10 +79,10 @@ def build_sample(vocab, sentence_length):
 def build_dataset(sample_length, vocab, sentence_length):
     dataset_x = []
     dataset_y = []
-    for i in range(sample_length):
+    for _ in range(sample_length):
         x, y = build_sample(vocab, sentence_length)
         dataset_x.append(x)
-        dataset_y.append([y])
+        dataset_y.append(y)
     # 返回两个元素都是整型的张量
     return torch.LongTensor(dataset_x), torch.LongTensor(dataset_y)
 
@@ -135,8 +136,8 @@ def main():
             loss = model(x, y)  #计算loss
             loss.backward()  #计算梯度
             optim.step()  #更新权重
-            watch_loss.append(loss.item(
-            ))  # tensor.item() 从只包含单个元素的张量中提取值并将其转换为 Python 的标准数值类型
+            # tensor.item() 从只包含单个元素的张量中提取值并将其转换为 Python 的标准数值类型
+            watch_loss.append(loss.item())
         print("=========\n第%d轮平均loss:%f" %
               (epoch + 1, np.mean(watch_loss)))  # np.mean()对矩阵个数求均值，返回实数
         acc = evaluate(model, vocab, sentence_length)  #测试本轮模型结果
@@ -165,11 +166,9 @@ def predict(model_path, vocab_path, input_strings):
     x = []
     for input_string in input_strings:
         x.append([vocab[char] for char in input_string])  #将输入序列化
-    print(x)
     model.eval()  #测试模式
     with torch.no_grad():  #不计算梯度
         result = model.forward(torch.LongTensor(x))  #模型预测，x转换成张量
-        print(result)
     for i, input_string in enumerate(input_strings):
         print("输入：%s, 预测类别：%d, 概率值：%f" % (input_string, round(float(
             result[i])), result[i]))  #打印结果，round()将数字四舍五入到给定的位数
