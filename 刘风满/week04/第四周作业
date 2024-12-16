@@ -1,0 +1,33 @@
+import copy
+Dict={
+    "经常":1,
+    "经":1,
+    "有":1,
+    "常":1,
+    "有意见":1,
+    "歧":1,
+    "意见":1,
+    "分歧":1,
+    "见":1,
+    "意":1,
+    "见分歧":1,
+    "分":1
+}
+sentence="经常有意见分歧"
+result_all=[]
+def all_cut(sentence,Dict,level,result=[]):
+    if len(sentence)>0:
+        for senqence in range(len(sentence)):
+            newresult = copy.copy(result)
+            newsenqence_c=sentence[:senqence+1]
+            if newsenqence_c in Dict:
+                newresult.append(newsenqence_c)
+                all_cut(sentence[senqence + 1:], Dict, level + 1, newresult)
+                if senqence == len(sentence) - 1:
+                    result_all.append(newresult)
+
+
+
+if __name__=="__main__":
+    all_cut(sentence,Dict,0)
+    print(result_all)
