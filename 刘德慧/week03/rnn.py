@@ -44,7 +44,7 @@ class TorchModel(nn.Module):
         if y is not None:
             return self.loss(y_pred, y)  #预测值和真实值计算损失
         else:
-            return y_pred  #输出预测结果
+            return y_pred  #输出预测结果,sentence_length + 1维的向量
 
 
 #字符集随便挑了一些字，实际上还可以扩充
@@ -79,7 +79,7 @@ def build_sample(vocab, sentence_length):
 def build_dataset(sample_length, vocab, sentence_length):
     dataset_x = []
     dataset_y = []
-    for _ in range(sample_length):
+    for i in range(sample_length):
         x, y = build_sample(vocab, sentence_length)
         dataset_x.append(x)
         dataset_y.append(y)
@@ -113,12 +113,12 @@ def evaluate(model, vocab, sample_length):
 
 def main():
     #配置参数
-    epoch_num = 10  #训练轮数
-    batch_size = 20  #每次训练样本个数
-    train_sample = 500  #每轮训练总共训练的样本总数
-    char_dim = 20  #每个字的维度
-    sentence_length = 6  #样本文本长度
-    learning_rate = 0.005  #学习率
+    epoch_num = 20  #训练轮数
+    batch_size = 40  #每次训练样本个数
+    train_sample = 1000  #每轮训练总共训练的样本总数
+    char_dim = 30  #每个字的维度
+    sentence_length = 10  #样本文本长度
+    learning_rate = 0.001  #学习率
     # 建立字表
     vocab = build_vocab()
     # 建立模型
@@ -158,8 +158,8 @@ def main():
 
 #使用训练好的模型做预测
 def predict(model_path, vocab_path, input_strings):
-    char_dim = 20  # 每个字的维度
-    sentence_length = 6  # 样本文本长度
+    char_dim = 30  # 每个字的维度
+    sentence_length = 10  # 样本文本长度
     vocab = json.load(open(vocab_path, "r", encoding="utf8"))  #加载字符表
     model = build_model(vocab, char_dim, sentence_length)  #建立模型
     model.load_state_dict(torch.load(model_path))  #加载训练好的权重
@@ -170,8 +170,9 @@ def predict(model_path, vocab_path, input_strings):
     with torch.no_grad():  #不计算梯度
         result = model.forward(torch.LongTensor(x))  #模型预测，x转换成张量
     for i, input_string in enumerate(input_strings):
-        print("输入：%s, 预测类别：%d, 概率值：%f" % (input_string, round(float(
-            result[i])), result[i]))  #打印结果，round()将数字四舍五入到给定的位数
+        print("输入：%s, 预测类别：%s" % (input_string, torch.argmax(result[i])))
+        print("概率值：%s" % (result[i]))
+        #打印结果，round()将数字四舍五入到给定的位数
 
 
 if __name__ == "__main__":
