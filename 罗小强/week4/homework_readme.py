@@ -68,8 +68,8 @@ def all_cut3(sentence, Dict):
             word = sentence[j:j+i]
             if word in Dict:
                 # 找到切分点，开始递归切分
-                left_cuts = all_cut(sentence[:j], Dict)
-                right_cuts = all_cut(sentence[j+i:], Dict)
+                left_cuts = all_cut3(sentence[:j], Dict)
+                right_cuts = all_cut3(sentence[j+i:], Dict)
                 for left in left_cuts:
                     for right in right_cuts:
                         target.add(tuple(left) + (word,) + tuple(right))
