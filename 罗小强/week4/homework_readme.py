@@ -36,18 +36,19 @@ def all_cut(sentence, Dict):
 def all_cut2(sentence, Dict):
     # 按最大长度优先切分
     max_len = max(len(word) for word in Dict)
-    target = set()  # 使用集合来避免重复结果
-
     def helper(sub_sentence):
         if not sub_sentence:
             return [[]]  # 返回包含空列表的结果
-
         cuts = []
+        #使用一个循环来遍历从 1 到 min(max_len, len(sub_sentence)) 的所有可能切分长度
         for i in range(1, min(max_len, len(sub_sentence)) + 1):
+            #对于每一次循环，提取子字符串 sub_sentence 从开头到第 i 个字符的部分，并检查这个部分是否在 Dict 中
             word = sub_sentence[:i]
+            # 如果在字典中找到这个词，则进行下一步的切分
             if word in Dict:
-                # 找到切分点，开始递归切分
+                # 如果找到了一个有效的词（word），则调用 helper 函数对剩下的子字符串（sub_sentence[i:]）进行递归切分
                 for right in helper(sub_sentence[i:]):
+                    #返回的结果 right 被添加到 cuts 列表中。这里组合了当前找到的词和后续的切分结果
                     cuts.append([word] + right)
         return cuts
 
