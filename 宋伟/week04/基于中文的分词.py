@@ -5,6 +5,7 @@
 # @Version :python 3.11
 # @Software:Sublime Text
 
+from functools import lru_cache
 
 #词典；每个词后方存储的是其词频，词频仅为示例，不会用到，也可自行修改
 Dict = {"经常":0.1,
@@ -28,15 +29,16 @@ sentence = "经常有意见分歧"
 def get_split_words(sentence:list)->list:
     ans = []
     n = len(sentence)
-    path = []
-    def backtrack(index,path:list):
+
+    @lru_cache
+    def backtrack(index,path:tuple):
         if index==n:
-            ans.append(path.copy())
+            ans.append(list(path))
             return
         for i in range(index,n):
             temp = sentence[index:i+1]
-            backtrack(i+1,path+[temp])
-    backtrack(0,path)
+            backtrack(i+1,path+(temp,))
+    backtrack(0,())
     return ans
 
 def filter_words_by_Dict(words:list,Dict:dict)->list:
