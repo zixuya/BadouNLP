@@ -53,5 +53,5 @@ def all_cut(sentence, Dict):
             result.append([current_word] + [sentence[i:]])
     return result
 
-result = all_cut('有意见分歧', Dict)
+result = all_cut(sentence, Dict)
 print('result', result)
