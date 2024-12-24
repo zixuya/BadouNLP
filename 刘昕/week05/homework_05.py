@@ -80,7 +80,7 @@ def main():
     for label, _ in sorted_label_distance_dict.items():
         sorted_sentence_label_dict[label] = sentence_label_dict[label]
 
-    # 打印聚类结果
+    # 打印相关度前十的聚类结果
     count = 0
     for label, sentences in sorted_sentence_label_dict.items():
         count += 1
