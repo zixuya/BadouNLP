@@ -1,4 +1,5 @@
 import copy
+
 Dict={
     "经常":1,
     "经":1,
@@ -15,19 +16,36 @@ Dict={
 }
 sentence="经常有意见分歧"
 result_all=[]
-def all_cut(sentence,Dict,level,result=[]):
+#从小长度开始匹配
+def all_cutsmalltobig(sentence,Dict,level,result=[]):
     if len(sentence)>0:
-        for senqence in range(len(sentence)):
+        for sequence in range(len(sentence)):
             newresult = copy.copy(result)
-            newsenqence_c=sentence[:senqence+1]
+            newsenqence_c=sentence[:sequence+1]
             if newsenqence_c in Dict:
                 newresult.append(newsenqence_c)
-                all_cut(sentence[senqence + 1:], Dict, level + 1, newresult)
-                if senqence == len(sentence) - 1:
+                all_cutsmalltobig(sentence[sequence + 1:], Dict, level + 1, newresult)
+                if sequence == len(sentence) - 1:
                     result_all.append(newresult)
 
+#从最大长度皮开始匹配
+def all_cutbigtosmall(sentence,Dict,result=[]):
+    sentencenum=len(sentence)
+    while sentencenum > 0:
+        newresult = copy.copy(result)
+        newsenqunce_c=sentence[:sentencenum]
+        if newsenqunce_c in Dict:
+            newresult.append(sentence[:sentencenum])
+            if sentencenum == len(sentence):
+                result_all.append(newresult)
+            else:
+                all_cutbigtosmall(sentence[sentencenum:], Dict, newresult)
+        sentencenum -= 1
 
 
 if __name__=="__main__":
-    all_cut(sentence,Dict,0)
+    #第一种从最小长度开始匹配切分
+    #all_cutsmalltobig(sentence,Dict,0)
+    #第二种从最大长度开始匹配切分
+    all_cutbigtosmall(sentence,Dict)
     print(result_all)
