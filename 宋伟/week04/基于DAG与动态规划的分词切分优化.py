@@ -8,10 +8,9 @@
 
 
 
-from collections import defaultdict
 import math
+from collections import defaultdict, deque
 
-# 构建有向无环图 (DAG)
 def build_dag(sentence, dictionary):
     n = len(sentence)
     dag = defaultdict(list)
@@ -19,53 +18,51 @@ def build_dag(sentence, dictionary):
         for j in range(i + 1, n + 1):
             word = sentence[i:j]
             if word in dictionary:
-                # 使用对数概率
                 log_prob = math.log(dictionary[word])
-                dag[i].append((j, log_prob))  # 存储 (终点, 对数概率)
-    print(dag)
+                dag[i].append((j, log_prob))
     return dag
 
-# 动态规划计算最优路径
-def find_best_cut_log(sentence, dictionary):
+def find_all_cuts_full(sentence, dictionary):
     n = len(sentence)
     dag = build_dag(sentence, dictionary)
-    
-    # DP数组：dp[i] 表示从第i个字符到末尾的最大对数概率
+
+    # 路径记录：存储从 0 到每个节点的所有可能路径
+    path_record = defaultdict(list)
+    path_record[0] = [[]]  # 从起点初始化为空路径
+
+    # 动态规划：记录每个节点的最大概率
     dp = [-float('inf')] * (n + 1)
-    dp[n] = 0  # 终点的对数概率为0（乘法单位）
-    
-    # 路径记录：用于回溯最优切分
-    path_record = [-1] * (n + 1)
-    
-    # 从后向前进行动态规划
-    for i in range(n - 1, -1, -1):
+    dp[0] = 0  # 起点概率初始化
+
+    for i in range(n):
         for j, log_prob in dag[i]:
-            if dp[i] < dp[j] + log_prob:
-                dp[i] = dp[j] + log_prob
-                path_record[i] = j
-    
-    # 回溯最优切分路径
-    best_path = []
-    start = 0
-    while start != -1 and start < n:
-        end = path_record[start]
-        best_path.append(sentence[start:end])
-        start = end
-    
-    return best_path, math.exp(dp[0])  # 返回最优切分和总概率（从对数还原）
+            # 更新路径记录，添加从 i 到 j 的路径
+            for path in path_record[i]:
+                path_record[j].append(path + [sentence[i:j]])
 
-# 测试代码
-dictionary = {
-    "经常": 0.1, "经": 0.05, "有": 0.1, "常": 0.001,
-    "有意见": 0.1, "歧": 0.001, "意见": 0.2, "分歧": 0.2,
-    "见": 0.05, "意": 0.05, "见分歧": 0.05, "分": 0.1
-}
+            # 更新动态规划值（最大概率路径）
+            dp[j] = max(dp[j], dp[i] + log_prob)
+
+    # 返回所有切分方式和最优概率
+    return path_record[n], math.exp(dp[n])
+
+# 示例
 sentence = "经常有意见分歧"
+dictionary = {"经常":0.1,
+        "经":0.05,
+        "有":0.1,
+        "常":0.001,
+        "有意见":0.1,
+        "歧":0.001,
+        "意见":0.2,
+        "分歧":0.2,
+        "见":0.05,
+        "意":0.05,
+        "见分歧":0.05,
+        "分":0.1}
+all_cuts, best_prob = find_all_cuts_full(sentence, dictionary)
 
-# 动态规划找最优切分
-best_cut, max_prob = find_best_cut_log(sentence, dictionary)
-
-# 输出结果
-print("最优切分方案:", " | ".join(best_cut))
-print("总概率:", max_prob)
-
+print("所有切分方式:")
+for cut in all_cuts:
+    print(cut)
+print("最优概率:", best_prob)
