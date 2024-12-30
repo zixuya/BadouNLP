@@ -75,4 +75,4 @@ if __name__ == "__main__":
     intermediate_size = 3072
     max_len = 512
     vocab_size = 30522
-    count(num_layers, hidden_size, intermediate_size, max_len, vocab_size)
+    count(num_layers, hidden_size, intermediate_size, max_len, vocab_size) # 输出: 108890112
