@@ -12,7 +12,7 @@ from transformers import BertModel
 
 # 方法一：直接看bert.state_dict()
 def calcu_all_parameter_cnt1():
-    bert = BertModel.from_pretrained(r"D:\Chen\八斗学院资料\本期培训\直播课程\6-第六周\第六周 语言模型\bert-base-chinese\bert-base-chinese", return_dict=False)
+    bert = BertModel.from_pretrained(r"F:\Desktop\work_space\pretrain_models\bert-base-chinese", return_dict=False)
     state_dict = bert.state_dict()
     # print(state_dict['embeddings.word_embeddings.weight'].shape) #torch.Size([21128, 768])
     # print(state_dict['embeddings.position_embeddings.weight'].shape) #torch.Size([512, 768])
@@ -36,14 +36,10 @@ def calcu_all_parameter_cnt1():
     # 'pooler.dense.weight', 'pooler.dense.bias'
 
     # 计算embeddings的参数量
-    embeddings_word_embeddings_weight_para_cnt = state_dict[
-        'embeddings.word_embeddings.weight'].numel()  # (V, 768) V= 21128,
-    embeddings_position_embeddings_weight_para_cnt = state_dict[
-        'embeddings.position_embeddings.weight'].numel()  # (512, 768)
-    embeddings_token_type_embeddings_weight_para_cnt = state_dict[
-        'embeddings.token_type_embeddings.weight'].numel()  # (2, 768)
-    embeddings_LayerNorm_weight_para_cnt = state_dict[
-        'embeddings.LayerNorm.weight'].numel()  # LayerNorm层 gamma (1, 768)
+    embeddings_word_embeddings_weight_para_cnt = state_dict['embeddings.word_embeddings.weight'].numel()  # (V, 768) V= 21128,
+    embeddings_position_embeddings_weight_para_cnt = state_dict['embeddings.position_embeddings.weight'].numel()  # (512, 768)
+    embeddings_token_type_embeddings_weight_para_cnt = state_dict['embeddings.token_type_embeddings.weight'].numel()  # (2, 768)
+    embeddings_LayerNorm_weight_para_cnt = state_dict['embeddings.LayerNorm.weight'].numel()  # LayerNorm层 gamma (1, 768)
     embeddings_LayerNorm_bias_para_cnt = state_dict['embeddings.LayerNorm.bias'].numel()  # LayerNorm层 beta (1, 768)
     embeddings_para_cnt = embeddings_word_embeddings_weight_para_cnt + \
                           embeddings_position_embeddings_weight_para_cnt + \
