@@ -10,7 +10,9 @@ def params_size(num_layer, vocab_size):  # 参数个数计算
     attention_params_num = 4 * (hidden_size * hidden_size + hidden_size) + (2 * hidden_size)
     # feed forward 层参数 两个线性层 + 一个归一化层
     feed_forward_params_num = 2 * (hidden_size * hidden_size + hidden_size) + (2 * hidden_size)
+    # pooler 层参数
+    pooler_num = hidden_size * hidden_size + hidden_size
     # 总参数个数
-    sum_num = embedding_params_num + num_layer * (attention_params_num + feed_forward_params_num)
+    sum_num = embedding_params_num + num_layer * (attention_params_num + feed_forward_params_num) + pooler_num
 
     return sum_num
