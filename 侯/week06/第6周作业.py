@@ -61,7 +61,7 @@ def bert_transform(batch_size, sentence_length, hidden_size,intermediate_size, n
     # attention_layer_norm_out与output_out相加，过feedforward归一化层
     feedforward_layer_norm_weight = hidden_size * hidden_size
     feedforward_layer_norm_bias = hidden_size
-    feedforward_layer_norm_out = batch_size * sentence_length, hidden_size
+    feedforward_layer_norm_out = batch_size * sentence_length * hidden_size
     return sum([q_weight,q_bias,k_weight,k_bias,v_weight,v_bias,q,k,v,qkv,dk,
                 attention_layer_norm_weight,attention_layer_norm_bias,attention_layer_norm_out,
                 intermediate_weight,intermediate_bias,intermediate_out,
@@ -89,11 +89,13 @@ def main():
     intermediate_size = 3072 # 4*768
     batch_size = 20
 
-    sentence_length = x.shape
+    sentence_length = 4
     embedding_count = bert_embedding(batch_size, sentence_length, vocab_length, max_length, hidden_size)
     transformer_count = bert_transform(batch_size, sentence_length, hidden_size, intermediate_size, num_attention_head)
     pooler_count = bert_pooler(batch_size, hidden_size)
     total = embedding_count + transformer_layer_num * transformer_count + pooler_count
     print('total:',total)
 
+if __name__ == '__main__':
+    main()
 
