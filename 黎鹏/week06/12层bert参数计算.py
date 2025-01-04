@@ -82,7 +82,7 @@ class DiyBert:
         output_weight, output_bias, \
         ff_layer_norm_w, ff_layer_norm_b = self.transformer_weights[0]
 
-        transformer_para = q_w.size + q_b.size + k_w.size + k_b.size + v_b.size + \
+        transformer_para = q_w.size + q_b.size + k_w.size + k_b.size + v_w.size + v_b.size + \
                            attention_output_weight.size + attention_output_bias.size + \
                            attention_layer_norm_w.size + attention_layer_norm_b.size + \
                            intermediate_weight.size + intermediate_bias.size + \
@@ -90,7 +90,14 @@ class DiyBert:
                            ff_layer_norm_w.size + ff_layer_norm_b.size
 
         print(f"total_para:{embedding_para + transformer_para} = embedding_para:{embedding_para} + transformer_para:{transformer_para}")
-        print()
+        total_parameter_1 = (21128 + 512 + 2) * self.hidden_size + self.hidden_size * 2 +\
+                            self.num_layers * (3 * (self.hidden_size + 1) * self.hidden_size + (self.hidden_size + 1) * self.hidden_size +\
+                                               2 * self.hidden_size +\
+                                               2 * (self.hidden_size) * (self.hidden_size * 4) + \
+                                               (self.hidden_size) + (self.hidden_size * 4) + \
+                                               2 * self.hidden_size)
+        print(f"total_parameter_1:{total_parameter_1}, diff:{embedding_para + transformer_para - total_parameter_1}")
+
     #bert embedding，使用3层叠加，在经过一个Layer norm层
     def embedding_forward(self, x):
         # x.shape = [max_len]
@@ -141,12 +148,16 @@ class DiyBert:
                                 self.hidden_size)
         #bn层，并使用了残差机制
         x = self.layer_norm(x + attention_output, attention_layer_norm_w, attention_layer_norm_b)
+        print(f"attention_layer_norm_w.shape:{attention_layer_norm_w.shape}, attention_layer_norm_w.size:{attention_layer_norm_w.size}")
+        print(f"attention_layer_norm_b.shape:{attention_layer_norm_b.shape}, attention_layer_norm_b.size:{attention_layer_norm_b.size}")
         #feed forward层
         feed_forward_x = self.feed_forward(x,
                               intermediate_weight, intermediate_bias,
                               output_weight, output_bias)
         #bn层，并使用了残差机制
         x = self.layer_norm(x + feed_forward_x, ff_layer_norm_w, ff_layer_norm_b)
+        print(f"ff_layer_norm_w.shape:{ff_layer_norm_w.shape}, ff_layer_norm_w.size:{ff_layer_norm_w.size}")
+        print(f"ff_layer_norm_b.shape:{ff_layer_norm_b.shape}, ff_layer_norm_b.size:{ff_layer_norm_b.size}")
         return x
 
     # self attention的计算
