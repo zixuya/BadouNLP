@@ -97,10 +97,26 @@ if __name__ == '__main__':
     batch_size = 20
     sentence_length = x.size
     attention_head_size = hidden_size / num_attention_head
-    # main(batch_size, sentence_length, vocab_length, max_length, hidden_size, intermediate_size, num_attention_head, transformer_layer_num)
-    
-    transformer_q_k_v_layer_norm_weight_bias_count = 6 * hidden_size * hidden_size + 6 * hidden_size
-    transformer_2_linear_weight_bias_count = 2 * intermediate_size * hidden_size + 2 * intermediate_size
+    main(batch_size, sentence_length, vocab_length, max_length, hidden_size, intermediate_size, num_attention_head, transformer_layer_num)
+
+    embedding_weight_bias_count = vocab_length * hidden_size + vocab_length + max_length * hidden_size + max_length + 2 * hidden_size + 2
+    embedding_out = 4 * batch_size * sentence_length * hidden_size
+    embedding_layer_norm_weight_bias = hidden_size * hidden_size + hidden_size
+    embedding_layer_norm_out = embedding_weight_bias_count + embedding_out + embedding_layer_norm_weight_bias
+
+    transformer_q_k_v_layer_norm_weight_bias_count = 5 * hidden_size * hidden_size + 5 * hidden_size
+    transformer_2_linear_weight_bias_count = 2 * intermediate_size * hidden_size + intermediate_size + hidden_size
+    transformer_intermediate_linear_out_count = batch_size * sentence_length * intermediate_size
+    transformer_q_k_v = 3 * batch_size * num_attention_head * sentence_length * attention_head_size
+    transformer_out = 4 * batch_size * sentence_length * hidden_size
+    dk = hidden_size / num_attention_head
+
+    transformer_count = (transformer_q_k_v_layer_norm_weight_bias_count + transformer_2_linear_weight_bias_count + transformer_intermediate_linear_out_count
+                     + transformer_q_k_v + transformer_out + dk)
+
+    pooler_count = hidden_size * hidden_size + hidden_size + batch_size * hidden_size
+    total_2 = embedding_layer_norm_out + transformer_count + pooler_count
+    print('total_2:', total_2)
     q_k_v = batch_size * num_attention_head * sentence_length * attention_head_size
     transformer_out_without_qkv = 4 * batch_size * sentence_length * hidden_size
 
