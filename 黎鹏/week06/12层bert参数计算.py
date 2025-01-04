@@ -45,6 +45,7 @@ class DiyBert:
         self.embeddings_layer_norm_weight = state_dict["embeddings.LayerNorm.weight"].numpy()
         self.embeddings_layer_norm_bias = state_dict["embeddings.LayerNorm.bias"].numpy()
         self.transformer_weights = []
+
         #transformer部分，有多层
         for i in range(self.num_layers):
             q_w = state_dict["encoder.layer.%d.attention.self.query.weight" % i].numpy()
@@ -70,8 +71,26 @@ class DiyBert:
         #pooler层
         self.pooler_dense_weight = state_dict["pooler.dense.weight"].numpy()
         self.pooler_dense_bias = state_dict["pooler.dense.bias"].numpy()
+        embedding_para = self.word_embeddings.size +  self.position_embeddings.size + self.token_type_embeddings.size + self.embeddings_layer_norm_weight.size +\
+                      self.embeddings_layer_norm_bias.size
+        q_w, q_b, \
+        k_w, k_b, \
+        v_w, v_b, \
+        attention_output_weight, attention_output_bias, \
+        attention_layer_norm_w, attention_layer_norm_b, \
+        intermediate_weight, intermediate_bias, \
+        output_weight, output_bias, \
+        ff_layer_norm_w, ff_layer_norm_b = self.transformer_weights[0]
 
+        transformer_para = q_w.size + q_b.size + k_w.size + k_b.size + v_b.size + \
+                           attention_output_weight.size + attention_output_bias.size + \
+                           attention_layer_norm_w.size + attention_layer_norm_b.size + \
+                           intermediate_weight.size + intermediate_bias.size + \
+                           output_weight.size + output_bias.size + \
+                           ff_layer_norm_w.size + ff_layer_norm_b.size
 
+        print(f"total_para:{embedding_para + transformer_para} = embedding_para:{embedding_para} + transformer_para:{transformer_para}")
+        print()
     #bert embedding，使用3层叠加，在经过一个Layer norm层
     def embedding_forward(self, x):
         # x.shape = [max_len]
@@ -212,6 +231,8 @@ class DiyBert:
     #链接[cls] token的输出层
     def pooler_output_layer(self, x):
         x = np.dot(x, self.pooler_dense_weight.T) + self.pooler_dense_bias
+        print(f"pooler_dense_weight.shape:{self.pooler_dense_weight.shape}, pooler_dense_weight.size:{self.pooler_dense_weight.size}")
+        print(f"pooler_dense_bias.shape:{self.pooler_dense_bias.shape}, pooler_dense_bias.size:{self.pooler_dense_bias.size}")
         x = np.tanh(x)
         return x
 
