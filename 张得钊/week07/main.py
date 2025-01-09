@@ -118,12 +118,12 @@ if __name__ == "__main__":
     #中间日志可以关掉，避免输出过多信息
     # 超参数的网格搜索
     result =  []
-    for model in ["bert"]:
+    for model in ["fast_text","rnn","cnn","gated_cnn","gru","lstm"]:
         Config["model_type"] = model
         logger.info("============模型 %s 开始===============" % model)
-        for lr in [2e-5, 3e-5]:
+        for lr in [1e-3, 1e-4]:
             Config["learning_rate"] = lr
-            for hidden_size in [768]:
+            for hidden_size in [128, 256]:
                 Config["hidden_size"] = hidden_size
                 for batch_size in [64, 128]:
                     Config["batch_size"] = batch_size
@@ -134,17 +134,13 @@ if __name__ == "__main__":
                         print("最后一轮准确率：", accuracy, "当前配置：", Config)
                         result.append([model, accuracy, lr, hidden_size, batch_size, pooling_style, train_time, predict_time])
                         logger.info("-------------下一次执行---------------")
-    # 创建 DataFrame
-    df = pd.DataFrame(result, columns=['model', 'acc', 'lr', 'hidden_size', 'batch_size', 'pooling_style', 'train_time', 'predict_time'])
-    # 打印表格
-    print(df)
     # result =  []
-    # for model in ["fast_text","rnn","cnn","gated_cnn","gru","lstm"]:
+    # for model in ["bert"]:
     #     Config["model_type"] = model
     #     logger.info("============模型 %s 开始===============" % model)
-    #     for lr in [1e-3, 1e-4]:
+    #     for lr in [2e-5, 3e-5]:
     #         Config["learning_rate"] = lr
-    #         for hidden_size in [128, 256]:
+    #         for hidden_size in [768]:
     #             Config["hidden_size"] = hidden_size
     #             for batch_size in [64, 128]:
     #                 Config["batch_size"] = batch_size
@@ -155,6 +151,12 @@ if __name__ == "__main__":
     #                     print("最后一轮准确率：", accuracy, "当前配置：", Config)
     #                     result.append([model, accuracy, lr, hidden_size, batch_size, pooling_style, train_time, predict_time])
     #                     logger.info("-------------下一次执行---------------")
+    
+    # 创建 DataFrame
+    df = pd.DataFrame(result, columns=['model', 'acc', 'lr', 'hidden_size', 'batch_size', 'pooling_style', 'train_time', 'predict_time'])
+    # 打印表格
+    print(df)
+    
     # for model in ["gated_cnn", 'bert', 'lstm']:
     #     Config["model_type"] = model
     #     for lr in [1e-3, 1e-4]:
