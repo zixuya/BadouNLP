@@ -19,7 +19,7 @@ Config = {
     "pooling_style":"max",
     "optimizer": "adam",
     "learning_rate": 1e-3,
-    "pretrain_model_path":r"D:\projects\py\week6\bert-base-chinese\bert-base-chinese",
+    "pretrain_model_path":r"D:\projects\nlp\week6\bert-base-chinese\bert-base-chinese",
     "seed": 987,
     "train_data_rate": 0.9,
 }
