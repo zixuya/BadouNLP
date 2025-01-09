@@ -62,11 +62,11 @@ def main(config):
             if index % int(len(train_data) / 2) == 0:
                 logger.info("batch loss %f" % loss)
         logger.info("epoch average loss: %f" % np.mean(train_loss))
-        acc = evaluator.eval(epoch)
+        acc,time = evaluator.eval(epoch)
         
     # model_path = os.path.join(config["model_path"], "epoch_%d.pth" % epoch)
     # torch.save(model.state_dict(), model_path)  #保存模型权重
-    return acc
+    return acc,time
 
 if __name__ == "__main__":
     main(Config)
@@ -80,6 +80,7 @@ if __name__ == "__main__":
     # 超参数的网格搜索
     for model in ["gated_cnn", 'bert', 'lstm','gru']:
         Config["model_type"] = model
+        print("最后一轮准确率：", main(Config), "当前配置：", Config["model_type"])
         for lr in [1e-3, 1e-4]:
             Config["learning_rate"] = lr
             for hidden_size in [128]:
