@@ -10,6 +10,8 @@ from config import Config
 from model import TorchModel, choose_optimizer
 from evaluate import Evaluator
 from loader import load_data
+import copy
+import pandas as pd
 #[DEBUG, INFO, WARNING, ERROR, CRITICAL]
 logging.basicConfig(level=logging.INFO, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 
-def main(config):
+def main(config, train_result):
     #创建保存模型的目录
     if not os.path.isdir(config["model_path"]):
         os.mkdir(config["model_path"])
@@ -63,22 +65,22 @@ def main(config):
                 logger.info("batch loss %f" % loss)
         logger.info("epoch average loss: %f" % np.mean(train_loss))
         acc = evaluator.eval(epoch)
-        
+
+    temp_config = copy.deepcopy(config)
+    print(acc, 'cccccccccccccccccccccc')
+    temp_config["acc"] = acc
     # model_path = os.path.join(config["model_path"], "epoch_%d.pth" % epoch)
     # torch.save(model.state_dict(), model_path)  #保存模型权重
+    train_result.append(temp_config)
     return acc
 
 if __name__ == "__main__":
-    main(Config)
-
-    # for model in ["cnn"]:
-    #     Config["model_type"] = model
-    #     print("最后一轮准确率：", main(Config), "当前配置：", Config["model_type"])
 
     #对比所有模型
     #中间日志可以关掉，避免输出过多信息
     # 超参数的网格搜索
-    for model in ["gated_cnn", 'bert', 'lstm']:
+    train_result = []
+    for model in ["gated_cnn", 'rcnn', 'lstm', 'gru']:
         Config["model_type"] = model
         for lr in [1e-3, 1e-4]:
             Config["learning_rate"] = lr
@@ -88,6 +90,8 @@ if __name__ == "__main__":
                     Config["batch_size"] = batch_size
                     for pooling_style in ["avg", 'max']:
                         Config["pooling_style"] = pooling_style
-                        print("最后一轮准确率：", main(Config), "当前配置：", Config)
+                        print("最后一轮准确率：", main(Config, train_result), "当前配置：", Config)
 
-
+    # 将结果输出为 csv
+    df = pd.DataFrame(train_result)
+    df.to_csv('dif.csv', index=False)
