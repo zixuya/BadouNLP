@@ -75,7 +75,13 @@ if __name__ == "__main__":
     #     print("最后一轮准确率：", main(Config), "当前配置：", Config["model_type"])
 
     table_header = "Model\tLearning_Rate\tHidden_Size\tbatch_sizes\tpooling_styles\tacc\ttime(预测100条耗时)\n"
-    table_rows = []
+    # 每次开始时写入表头（如果文件不存在的话）
+    output_path = "week7/work/model_result.txt"
+    try:
+        with open(output_path, "x") as file:  # "x"模式仅在文件不存在时创建新文件
+            file.write(table_header)
+    except FileExistsError:
+        pass  # 如果文件已存在，跳过表头写入
     #对比所有模型
     #中间日志可以关掉，避免输出过多信息
     # 超参数的网格搜索
@@ -92,10 +98,8 @@ if __name__ == "__main__":
                         accuracy,time = main(Config)
                         print("最后一轮准确率：", accuracy, "当前配置：", Config)
                         row = f"{model}\t{lr}\t{hidden_size}\t{batch_size}\t{pooling_style}\t{accuracy}\t{time*100}\n"
-                        table_rows.append(row)
+                        # 将每次的结果追加写入文件
+                        with open(output_path, "a") as file:
+                            file.write(row)
 
-    table_text = table_header + "".join(table_rows) #拼接表格
-    output_path = "week7/work/model_configurations.txt"
-    with open(output_path, "w") as file:
-        file.write(table_text)
-    print(f"Table saved as {output_path}")
+    print(f"Table updated and saved as {output_path}")
