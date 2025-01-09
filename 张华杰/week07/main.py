@@ -9,7 +9,6 @@ import logging
 from config import Config
 from model import TorchModel, choose_optimizer
 from evaluate import Evaluator
-from tester import Tester
 from loader import load_data
 #[DEBUG, INFO, WARNING, ERROR, CRITICAL]
 logging.basicConfig(level=logging.INFO, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -44,7 +43,6 @@ def main(config):
     #加载效果测试类
     evaluator = Evaluator(config, model, logger)
     #加载预测类
-    tester = Tester(config, model, logger)
     #训练
     for epoch in range(config["epoch"]):
         epoch += 1
