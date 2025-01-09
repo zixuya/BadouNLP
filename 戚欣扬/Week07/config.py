@@ -6,9 +6,9 @@
 
 Config = {
     "model_path": "output",
-    "train_data_path": r"F:/八斗课程/第七周/文本分类问题/train_data.json",
-    "valid_data_path": r"F:/八斗课程/第七周/文本分类问题/test_data.json",
-    "vocab_path":r"F:/八斗课程/第七周/文本分类问题/nn_pipline/chars.txt",
+    "train_data_path": r"E:/八斗课程/第七周/文本分类问题/train_data.json",
+    "valid_data_path": r"E:/八斗课程/第七周/文本分类问题/test_data.json",
+    "vocab_path":r"E:/八斗课程/第七周/文本分类问题/nn_pipline/chars.txt",
     "model_type":"fast_text",
     "max_length": 30,
     "hidden_size": 256,
