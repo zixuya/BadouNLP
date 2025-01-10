@@ -95,3 +95,6 @@ if __name__ == "__main__":
     from config import Config
     dg = DataGenerator("valid_tag_news.json", Config)
     print(dg[2])
+
+
+#只做出加载数据  理不清楚。。
