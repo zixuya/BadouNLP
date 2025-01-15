@@ -1,10 +1,10 @@
 import logging
 import torch
 import numpy as np
-from test_config import Config
-from test_model import SiameseNetwork, choose_optimizer
-from test_loader import load_data
-from test_evaluate import Evaluator
+from home_config import Config
+from home_model import SiameseNetwork, choose_optimizer
+from home_loader import load_data
+from home_evaluate import Evaluator
 
 logging.basicConfig(level = logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
