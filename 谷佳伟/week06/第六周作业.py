@@ -1,97 +1,46 @@
-
-import numpy as np
 import torch
-from transformers import BertModel
 import math
+import torch.nn as nn
+import numpy as np
+from transformers import BertModel
 
+model = BertModel.from_pretrained(r"D:\桌面\资料\第六周\bert-base-chinese", return_dict=False)
+n = 2                       # 输入最大句子个数
+vocab = 21128               # 词表数目
+max_sequence_length = 512   # 最大句子长度
+embedding_size = 768        # embedding维度
+hide_size = 3072            # 隐藏层维数
+num_layers = 12              # 隐藏层层数
 
-'''
+#第一部分：embedding层参数的计算
+# embedding过程中的参数，其中 vocab * embedding_size是词表embedding参数， max_sequence_length * embedding_size是位置参数， n * embedding_size是句子参数
+# embedding_size + embedding_sizes是layer_norm层参数
+embedding_parameters = vocab * embedding_size + max_sequence_length * embedding_size + n * embedding_size + embedding_size + embedding_size
 
-作业: 计算bert参数量
+#第二部分：self_attention参数
+# self_attention过程的参数, 其中embedding_size * embedding_size是权重参数，embedding_size是bias， *3是K Q V三个
+self_attention_parameters = (embedding_size * embedding_size + embedding_size) * 3
 
-bert参数量: 
-(vocab_size + 512 + 2 + 1 + 1) * hidden_size
-+ 12 * ( (4*hidden_size + 2*intermediate_size + 9)*hidden_size + intermediate_size )
-+ (hidden_size * hidden_size + hidden_size)
+#第三部分：self_attention_out参数
+# self_attention_out参数 其中 embedding_size * embedding_size + embedding_size 是self输出的线性层参数，embedding_size + embedding_size是layer_norm层参数
+self_attention_out_parameters = embedding_size * embedding_size + embedding_size + embedding_size + embedding_size
 
-vocab_size: 词表大小, bert为21128
-hidden_size: 词向量长度, bert中为768
-intermediate_size: feed forward层中间层大小, bert中为3072
+#第四部分：Feed_Forward参数
+# Feed Forward参数 其中embedding_size * hide_size + hide_size第一个线性层，embedding_size * hide_size + embedding_size第二个线性层，
+# embedding_size + embedding_size是layer_norm层
+feed_forward_parameters = embedding_size * hide_size + hide_size + embedding_size * hide_size + embedding_size + embedding_size + embedding_size
 
-上述公式计算结果为：102267648
+#第五部分：pool_fc层参数
+# pool_fc层参数
+pool_fc_parameters = embedding_size * embedding_size + embedding_size
 
-具体过程看下面的详细解释，后面的代码实现验证了正确性
+# 模型总参数 = embedding层参数 + self_attention参数 + self_attention_out参数 + Feed_Forward参数 + pool_fc层参数
+all_paramerters = embedding_parameters + (self_attention_parameters + self_attention_out_parameters + \
+    feed_forward_parameters) * num_layers + pool_fc_parameters
 
-'''
+print("模型实际参数个数为%d" % sum(p.numel() for p in model.parameters()))  #调用模型函数计算出的
+print("diy计算参数个数为%d" % all_paramerters)                             #自己计算出来的
 
-# 此处是详细解释：
-'''
-bert: embedding层 + transformer层(12层) + pooler层
-
-embedding层: word_embeddings + position_embeddings + segment_embeddings + layer_normalization
-(三层+归一化)
-word_embeddings: vocab_size * hidden_size
-position_embeddings: 512 * hidden_size
-segment_embeddings: 2 * hidden_size
-layer_norm_W: 1 * hidden_size,  layer_norm_b: 1 * hidden_size
-参数量:
-vocab_size * hidden_size + 512 * hidden_size + 2 * hidden_size + 1 * hidden_size + 1 * hidden_size
-= (vocab_size + 512 + 2 + 1 + 1) * hidden_size
-
-单个transformer层: Attention(Q,K,V) + Linear + layer_norm + linear + gelu + linear + layer_norm
-Linear(Attention(Q,K,V)) -> layer_normalization(x_embedding+x_attention)
--> Linear(gelu(Linear(x))) -> layer_normalization(x_embedding+x_attention)
-Q_W: hidden_size * hidden_size,  Q_b: 1 * hidden_size
-K_W: hidden_size * hidden_size,  K_b: 1 * hidden_size
-V_W: hidden_size * hidden_size,  V_b: 1 * hidden_size
-Linear_W: hidden_size * hidden_size,  Linear_b: 1 * hidden_size
-layer_norm1_W: 1 * hidden_size,  layer_norm1_b: 1 * hidden_size
-ff_Linear1_W: intermediate_size * hidden_size,  ff_Linear1_b: 1 * intermediate_size
-ff_Linear2_W: hidden_size * intermediate_size,  ff_Linear2_b: 1 * hidden_size
-layer_norm2_W: 1 * hidden_size,  layer_norm2_b: 1 * hidden_size
-参数量:
-4 * (hidden_size * hidden_size + 1 * hidden_size)
-+ 1 * hidden_size + 1 * hidden_size
-+ intermediate_size * hidden_size + intermediate_size + hidden_size * intermediate_size + 1 * hidden_size
-+ 1 * hidden_size + 1 * hidden_size
-= (4*hidden_size + 4 + 1 + 1 + 2*intermediate_size + 1 + 1 + 1)*hidden_size + intermediate_size
-= (4*hidden_size + 2*intermediate_size + 9)*hidden_size + intermediate_size
-
-pooler层:
-pooler_W: hidden_size * hidden_size,  pooler_b: 1 * hidden_size
-
-总参数量:
-(vocab_size + 512 + 2 + 1 + 1) * hidden_size
-+ 12 * ( (4*hidden_size + 2*intermediate_size + 9)*hidden_size + intermediate_size )
-+ (hidden_size * hidden_size + hidden_size)
-
-'''
-
-# 此处为代码实现
-def compute_bert_param_num():
-    vocab_size = 21128 #词表大小
-    hidden_size = 768  #词向量维度
-    intermediate_size = 3072  #feed forward层的中间层大小
-    # 嵌入层部分的参数量
-    layer_embedding_size = (vocab_size + 512 + 2 + 1 + 1) * hidden_size
-    # transformer部分参数量
-    layer_transformer_size = 12 * ( (4*hidden_size + 2*intermediate_size + 9)*hidden_size + intermediate_size )
-    # pooler部分参数量
-    layer_pooler_size = hidden_size * hidden_size + hidden_size
-    result = layer_embedding_size + layer_transformer_size + layer_pooler_size
-    return result
-
-def get_bert_param_num():
-    bert = BertModel.from_pretrained("bert-base-chinese", return_dict=False)
-    state_dict = bert.state_dict()
-    num_param = 0
-    for key in state_dict:
-        param = state_dict[key]
-        # 计算参数数量
-        num_param += param.numel()
-    return num_param
-
-num_param_true = get_bert_param_num()
-num_param_compute = compute_bert_param_num()
-print('bert实际参数量: ', num_param_true)
-print('计算得到的bert参数量: ', num_param_compute)
+#result 
+#模型实际参数个数为102267648  = 0.1B（1B=10亿 bert_base版本；）（bert_large版本有0.3B）（主流大模型6-7B，>60已经是非常大的了，还有>100B的）
+#diy计算参数个数为102267648
