@@ -57,15 +57,6 @@ class SentenceMatchNetwork(nn.Module):
         else:
             return self.sentence_encoder(x) #如果改为x[:,0]则是两句话不匹配的概率
 
-
-    def sentence_encode(self, input_ids):
-        x = self.embedding(input_ids)  # x:batch_size, max_length, embedding_size
-        x = self.encoder(x)  #
-        return nn.MaxPool1d(x.shape[1])(x.transpose(1, 2)).squeeze()
-
-
-
-
 def choose_optimizer(config, model):
     optimizer = config["optimizer"]
     learning_rate = config["learning_rate"]
