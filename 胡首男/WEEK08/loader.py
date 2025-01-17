@@ -81,22 +81,20 @@ class DataGenerator:
         else:
             return self.data[index]
 
-    #随机生成3元组样本，2正1负
+    #依照一定概率生成负样本或正样本
+    #负样本从随机两个不同的标准问题中各随机选取一个
+    #正样本从随机一个标准问题中随机选取两个
     def random_train_sample(self):
         standard_question_index = list(self.knwb.keys())
-        # 先选定两个意图，之后从第一个意图中取2个问题，第二个意图中取一个问题
-        p, n = random.sample(standard_question_index, 2)
-        # 如果某个意图下刚好只有一条问题，那只能两个正样本用一样的；
-        # 这种对训练没帮助，因为相同的样本距离肯定是0，但是数据充分的情况下这种情况很少
-        if len(self.knwb[p]) == 1:
-            s1 = s2 = self.knwb[p][0]
-        #这应当是一般情况
+        #取出标准问下的两个问题a/p+另一个标准问下的一个问题n
+        a1, n1 = random.sample(standard_question_index,2)
+        if len(self.knwb[a1]) < 2:
+            return self.random_train_sample()
         else:
-            s1, s2 = random.sample(self.knwb[p], 2)
-        # 随机一个负样本
-        s3 = random.choice(self.knwb[n])
-        # 前2个相似，后1个不相似，不需要额外在输入一个0或1的label，这与一般的loss计算不同
-        return [s1, s2, s3]
+            a, p = random.sample(self.knwb[a1], 2)
+            n = random.choice(self.knwb[n1])
+            return [a, p, n]
+
 
 
 #加载字表或词表
