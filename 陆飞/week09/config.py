@@ -11,7 +11,7 @@ Config = {
     "valid_data_path": "ner_data/test",
     "vocab_path":"chars.txt",
     "vocab_size": 4622,
-    "max_length": 100,
+    "max_length": 200,
     "hidden_size": 256,
     "num_layers": 2,
     "epoch": 20,
