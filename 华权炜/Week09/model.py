@@ -19,7 +19,7 @@ class TorchModel(nn.Module):
         num_layers = config["num_layers"]
         self.embedding = nn.Embedding(vocab_size, hidden_size, padding_idx=0)
         self.layer = BertModel.from_pretrained(config["bert_path"], return_dict=False)
-        self.classify = nn.Linear(hidden_size * 2, class_num)
+        self.classify = nn.Linear(hidden_size, class_num)
         self.crf_layer = CRF(class_num, batch_first=True)
         self.use_crf = config["use_crf"]
         self.loss = torch.nn.CrossEntropyLoss(ignore_index=-1)  #loss采用交叉熵损失
