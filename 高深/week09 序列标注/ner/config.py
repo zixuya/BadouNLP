@@ -21,5 +21,6 @@ Config = {
     "class_num": 9,
     # "bert_path": r"F:\Desktop\work_space\pretrain_models\bert-base-chinese",
     "bert_model": "bert-base-chinese",
+    "model_type": "bert",
 }
 

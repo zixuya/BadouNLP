@@ -18,24 +18,28 @@ class TorchModel(nn.Module):
         class_num = config["class_num"]
         num_layers = config["num_layers"]
         self.embedding = nn.Embedding(vocab_size, hidden_size, padding_idx=0)
-        # self.layer = nn.LSTM(hidden_size, hidden_size, batch_first=True, bidirectional=True, num_layers=num_layers)
-        self.layer = BertModel.from_pretrained(config["bert_model"], return_dict=False)
-        hidden_size = self.layer.config.hidden_size # use hidden size from bert model
-        # self.classify = nn.Linear(hidden_size * 2, class_num) # bidirectional LSTM
-        self.classify = nn.Linear(hidden_size, class_num) # bert output is mapped to hidden_size, not 2 * hidden_size
+
+        self.use_bert = (config["model_type"] == "bert")
+        if self.use_bert:
+            self.layer = BertModel.from_pretrained(config["bert_model"], return_dict=False)
+            hidden_size = self.layer.config.hidden_size # use hidden size from bert model
+            self.classify = nn.Linear(hidden_size, class_num) # bert output is mapped to hidden_size, not 2 * hidden_size
+        else:
+            self.layer = nn.LSTM(hidden_size, hidden_size, batch_first=True, bidirectional=True, num_layers=num_layers)
+            self.classify = nn.Linear(hidden_size * 2, class_num) # bidirectional LSTM
+                        
         self.crf_layer = CRF(class_num, batch_first=True)
         self.use_crf = config["use_crf"]
         self.loss = torch.nn.CrossEntropyLoss(ignore_index=-1)  #loss采用交叉熵损失
 
     #当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, target=None):
-        # LSTM
-        # x = self.embedding(x)  #input shape:(batch_size, sen_len)
-        # x, _ = self.layer(x)      #input shape:(batch_size, sen_len, input_dim)
-        
-        # BERT
-        x = self.layer(x)[0] #output shape:(batch_size, sen_len, hidden_size)
-
+        if self.use_bert:
+            x = self.layer(x)[0] #output shape:(batch_size, sen_len, hidden_size)
+        else: # LSTM
+            x = self.embedding(x)  #input shape:(batch_size, sen_len)
+            x, _ = self.layer(x)  #input shape:(batch_size, sen_len, input_dim)
+            
         predict = self.classify(x) #ouput:(batch_size, sen_len, num_tags) -> (batch_size * sen_len, num_tags)
 
         if target is not None:
