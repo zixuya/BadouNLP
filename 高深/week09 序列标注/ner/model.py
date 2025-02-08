@@ -21,7 +21,10 @@ class TorchModel(nn.Module):
 
         self.use_bert = (config["model_type"] == "bert")
         if self.use_bert:
-            self.layer = BertModel.from_pretrained(config["bert_model"], return_dict=False)
+            self.layer = BertModel.from_pretrained(
+                config["bert_model"], 
+                num_hidden_layers=3,
+                return_dict=False)
             hidden_size = self.layer.config.hidden_size # use hidden size from bert model
             self.classify = nn.Linear(hidden_size, class_num) # bert output is mapped to hidden_size, not 2 * hidden_size
         else:
