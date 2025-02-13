@@ -1,4 +1,5 @@
 #coding:utf8
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -68,11 +69,12 @@ def generate_sentence(openings, model,  window_size,tokenizer):
     model.eval()
     with torch.no_grad():
         pred_char = ""
-        mask = generate_causal_mask(window_size).unsqueeze(0).expand(1, -1, -1)
+
         #生成了换行符，或生成文本超过30字则终止迭代
         while pred_char != "\n" and len(openings) <= 30:
             openings += pred_char
-            x = tokenizer.encode(openings, max_length=window_size, pad_to_max_length=True)
+
+            x = [tokenizer.vocab.get(word, tokenizer.vocab.get("[UNK]")) for word in openings[-window_size:]]  # 将字转换成序号
             x = torch.LongTensor([x])
             if torch.cuda.is_available():
                 x = x.cuda()
@@ -82,7 +84,7 @@ def generate_sentence(openings, model,  window_size,tokenizer):
     return openings
 
 def sampling_strategy(prob_distribution):
-    if random.random() > 0.1:
+    if random.random() > 0.2:
         strategy = "greedy"
     else:
         strategy = "sampling"
@@ -114,9 +116,9 @@ def calc_perplexity(sentence, model, vocab, window_size):
 
 
 def train(corpus_path, save_weight=True):
-    epoch_num = 1000        #训练轮数
-    batch_size = 128       #每次训练样本个数
-    train_sample = 1000   #每轮训练总共训练的样本总数
+    epoch_num = 20        #训练轮数
+    batch_size = 256       #每次训练样本个数
+    train_sample = 10000   #每轮训练总共训练的样本总数
     window_size = 10       #样本文本长度
     bert_path = r"/Volumes/komorebi/model/bert-base-chinese"
     corpus = load_corpus(corpus_path)     #加载语料
@@ -151,8 +153,6 @@ def train(corpus_path, save_weight=True):
 
 def generate_causal_mask(seq_len):
     mask = torch.triu(torch.ones(seq_len, seq_len))
-    # 将 1 转换为 -inf，0 保持不变
-    # mask = mask.masked_fill(mask == 1, float('-inf'))
     return mask
 
 if __name__ == "__main__":
