@@ -163,7 +163,7 @@ def sampling_strategy(prob_distribution):
 def train(corpus_path, Config, save_weight=True):
     epoch_num = 20        #训练轮数
     batch_size = 128       #每次训练样本个数
-    train_sample = 100000   #每轮训练总共训练的样本总数
+    train_sample = 50000   #每轮训练总共训练的样本总数
     char_dim = 256        #每个字的维度
     window_size = 10       #样本文本长度
     
