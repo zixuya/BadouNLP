@@ -29,7 +29,8 @@ class LanguageModel(nn.Module):
 
     def forward(self, x, attention_mask=None, y=None):
         # x = self.embedding(x)  #output shape:(batch_size, sen_len, input_dim)
-        x, _ = self.bert(x, attention_mask=attention_mask,) #output shape:(batch_size, sen_len, input_dim)
+
+        x, _ = self.bert(input_ids=x, attention_mask=attention_mask) #output shape:(batch_size, sen_len, input_dim)
         y_pred = self.classify(x) #output shape:(batch_size, sen_len, vocab_size)
         if y is not None:
             return self.loss(y_pred.view(-1, y_pred.shape[-1]), y.view(-1))
