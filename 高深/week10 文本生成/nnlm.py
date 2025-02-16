@@ -20,7 +20,10 @@ class LanguageModel(nn.Module):
         # self.embedding = nn.Embedding(len(vocab), input_dim)
         # self.layer = nn.LSTM(input_dim, input_dim, num_layers=1, batch_first=True)
         # use bert layer
-        self.layer = BertModel.from_pretrained("bert-base-chinese", num_hidden_layers=3)
+        self.layer = BertModel.from_pretrained("bert-base-chinese", 
+                                               num_hidden_layers=3,
+                                               return_dict=False,
+                                               attn_implementation="eager")
         hidden_size = self.layer.config.hidden_size
         # print(self.layer.config)
         # self.classify = nn.Linear(input_dim, len(vocab))
@@ -28,33 +31,19 @@ class LanguageModel(nn.Module):
         self.dropout = nn.Dropout(0.1)
         self.loss = nn.functional.cross_entropy
 
-    def get_pad_mask(self, seq, pad_idx):
-        return (seq != pad_idx)
-
-
-    def get_subsequent_mask(self, seq):
-        ''' For masking out the subsequent info. '''
-        sz_b, len_s = seq.size()
-        subsequent_mask = (1 - torch.triu(
-            torch.ones((1, len_s, len_s), device=seq.device), diagonal=1)).bool()
-        return subsequent_mask
-
     #当输入真实标签，返回loss值；无真实标签，返回预测值
     def forward(self, x, y=None):
-        # x = self.embedding(x)       #output shape:(batch_size, sen_len, input_dim)
-        # x = self.layer(x)        #output shape:(batch_size, sen_len, input_dim)
-
-        # apply causal mask
-        trg_mask = self.get_pad_mask(x, 0)
-        x = self.layer(
-            input_ids=x, 
-            attention_mask=trg_mask)[0]   #output shape:(batch_size, sen_len, hidden_size)
-        
-        y_pred = self.classify(x)   #output shape:(batch_size, sen_len, vocab_size)
 
         if y is not None:
+            mask = torch.tril(torch.ones(x.shape[0], x.shape[1], x.shape[1])) # batch, seq_len, seq_len
+            if torch.cuda.is_available():
+                mask = mask.cuda()
+            x, _ = self.layer(x, attention_mask = mask)
+            y_pred = self.classify(x)   #output shape:(batch_size, sen_len, vocab_size)
             return self.loss(y_pred.view(-1, y_pred.shape[-1]), y.view(-1))
         else:
+            x, _ = self.layer(x)
+            y_pred = self.classify(x)   #output shape:(batch_size, sen_len, vocab_size)
             return torch.softmax(y_pred, dim=-1)
 
 #加载字表
