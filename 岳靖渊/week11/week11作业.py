@@ -219,7 +219,6 @@ def train(corpus_path, save_weight=True):
         print("=========\n第%d轮平均loss:%f" % (epoch + 1, np.mean(watch_loss)))
         print(generate_sentence("西餐厅也应“入乡随俗”", model, tokenizer, window_size))
         print(generate_sentence("APEC期间廊坊放假方案消息属实", model, tokenizer, window_size))
-        print(generate_sentence("你是不是傻逼", model, tokenizer, window_size))
     if not save_weight:
         return
     else:
