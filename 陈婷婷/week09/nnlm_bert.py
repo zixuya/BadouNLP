@@ -21,7 +21,7 @@ class LanguageModel(nn.Module):
         
         #self.embedding = nn.Embedding(len(vocab), input_dim)
         #self.layer = nn.LSTM(input_dim, input_dim, num_layers=1, batch_first=True)
-        self.bert = BertModel.from_pretrained(Config["pretrain_model_path"], return_dict=False)
+        self.bert = BertModel.from_pretrained(Config["pretrain_model_path"], return_dict=False, attn_implementation="eager")
         self.classify = nn.Linear(Config["hidden_size"], Config["vocab_size"])
         #self.classify = nn.Linear(input_dim, len(vocab))
         #self.dropout = nn.Dropout(0.1)
@@ -33,7 +33,10 @@ class LanguageModel(nn.Module):
         #x, _ = self.layer(x)        #output shape:(batch_size, sen_len, input_dim)
 
         if y is not None:
-            mask = (1 - torch.triu(torch.ones((x.shape[0], x.shape[1], x.shape[1])), diagonal=1))
+            #mask = (1 - torch.triu(torch.ones((x.shape[0], x.shape[1], x.shape[1])), diagonal=1))
+            mask = torch.tril(torch.ones((x.shape[0], x.shape[1], x.shape[1])))
+            if torch.cuda.is_available():
+                mask = mask.cuda()
             x, _ = self.bert(x, attention_mask=mask)
             y_pred = self.classify(x)   #output shape:(batch_size, vocab_size)
             return self.loss(y_pred.view(-1, y_pred.shape[-1]), y.view(-1))
@@ -61,8 +64,8 @@ def load_corpus(path):
     return corpus
 
 
-def encode_sentence(text, Config, tokenizer, padding=True):
-    return tokenizer.encode(text, padding="max_length", max_length=Config["max_length"], truncation=True)
+def encode_sentence(text, Config, tokenizer):
+    return tokenizer.encode(text, padding="max_length", max_length=Config["max_length"], truncation=True, add_special_tokens=False)
 
 def decode_sentence(text, tokenizer):
     return tokenizer.decode(text)
@@ -75,7 +78,7 @@ def decode_sentence(text, tokenizer):
     
 #随机生成一个样本
 #从文本中截取随机窗口，前n个字作为输入，最后一个字作为输出
-def build_sample(window_size, corpus, tokenizer):
+def build_sample(window_size, corpus, tokenizer, Config):
     start = random.randint(0, len(corpus) - 1 - window_size)
     end = start + window_size
     window = corpus[start:end]
@@ -83,8 +86,8 @@ def build_sample(window_size, corpus, tokenizer):
     #print(window, target)
     #x = [vocab.get(word, vocab["<UNK>"]) for word in window]   #将字转换成序号
     #y = [vocab.get(word, vocab["<UNK>"]) for word in target]
-    x = encode_sentence(window, Config, tokenizer)
-    y = encode_sentence(target, Config, tokenizer)
+    x = tokenizer.encode(window, padding='max_length', truncation=True, max_length=Config["max_length"], add_special_tokens=False)
+    y = tokenizer.encode(target, padding='max_length', truncation=True, max_length=Config["max_length"], add_special_tokens=False)
     return x, y
 
 #建立数据集
@@ -92,11 +95,11 @@ def build_sample(window_size, corpus, tokenizer):
 #vocab 词表
 #window_size 样本长度
 #corpus 语料字符串
-def build_dataset(sample_length, window_size, corpus, tokenizer):
+def build_dataset(sample_length, window_size, corpus, tokenizer, Config):
     dataset_x = []
     dataset_y = []
     for i in range(sample_length):
-        x, y = build_sample(window_size, corpus, tokenizer)
+        x, y = build_sample(window_size, corpus, tokenizer, Config)
         dataset_x.append(x)
         dataset_y.append(y)
     return torch.LongTensor(dataset_x), torch.LongTensor(dataset_y)
@@ -108,7 +111,7 @@ def build_model(Config):
     return model
 
 #文本生成测试代码
-def generate_sentence(openings, model, Config, window_size, tokenizer):
+def generate_sentence(openings, model, tokenizer):
     #reverse_vocab = dict((y, x) for x, y in vocab.items())
     model.eval()
     with torch.no_grad():
@@ -117,14 +120,14 @@ def generate_sentence(openings, model, Config, window_size, tokenizer):
         while pred_char != "\n" and len(openings) <= 30:
             openings += pred_char
             #x = [vocab.get(char, vocab["<UNK>"]) for char in openings[-window_size:]]
-            x = encode_sentence(openings, Config, tokenizer)
+            x = tokenizer.encode(openings, add_special_tokens=False)
             x = torch.LongTensor([x])
             if torch.cuda.is_available():
                 x = x.cuda()
             y = model(x)[0][-1]
             index = sampling_strategy(y)
             #pred_char = reverse_vocab[index]
-            pred_char = ''.join(decode_sentence(index, tokenizer))
+            pred_char = ''.join(tokenizer.decode(index))
     return openings
 
 def sampling_strategy(prob_distribution):
@@ -163,7 +166,7 @@ def sampling_strategy(prob_distribution):
 def train(corpus_path, Config, save_weight=True):
     epoch_num = 20        #训练轮数
     batch_size = 128       #每次训练样本个数
-    train_sample = 50000   #每轮训练总共训练的样本总数
+    train_sample = 5000   #每轮训练总共训练的样本总数
     char_dim = 256        #每个字的维度
     window_size = 10       #样本文本长度
     
@@ -180,7 +183,7 @@ def train(corpus_path, Config, save_weight=True):
         model.train()
         watch_loss = []
         for batch in range(int(train_sample / batch_size)):
-            x, y = build_dataset(batch_size, window_size, corpus, tokenizer) #构建一组训练样本
+            x, y = build_dataset(batch_size, window_size, corpus, tokenizer, Config) #构建一组训练样本
             if torch.cuda.is_available():
                 x, y = x.cuda(), y.cuda()
             optim.zero_grad()    #梯度归零
@@ -189,8 +192,8 @@ def train(corpus_path, Config, save_weight=True):
             optim.step()         #更新权重
             watch_loss.append(loss.item())
         print("=========\n第%d轮平均loss:%f" % (epoch + 1, np.mean(watch_loss)))
-        print(generate_sentence("让他在半年之前，就不能做出", model, Config, window_size, tokenizer))
-        print(generate_sentence("李慕站在山路上，深深的呼吸", model, Config, window_size, tokenizer))
+        print(generate_sentence("让他在半年之前，就不能做出", model, tokenizer))
+        print(generate_sentence("李慕站在山路上，深深的呼吸", model, tokenizer))
     if not save_weight:
         return
     else:
