@@ -6,8 +6,7 @@ import numpy as np
 import math
 import random
 import os
-import re
-from transformers import BertModel, BertTokenizer
+from transformers import BertModel
 
 """
 基于pytorch的LSTM语言模型
@@ -17,16 +16,17 @@ from transformers import BertModel, BertTokenizer
 class LanguageModel(nn.Module):
     def __init__(self, input_dim, vocab):
         super(LanguageModel, self).__init__()
-        # self.embedding = nn.Embedding(len(vocab), input_dim)
-        # self.layer = nn.LSTM(input_dim, input_dim, num_layers=1, batch_first=True)
-        # use bert layer
+
+        # Implement bert layer
         self.layer = BertModel.from_pretrained("bert-base-chinese", 
-                                               num_hidden_layers=3,
+                                               num_hidden_layers=1,
                                                return_dict=False,
-                                               attn_implementation="eager")
+                                               attn_implementation="eager") 
+        # attn_implementation would enable 3D attention mask to be passed in. 
+        # Otherwise attention_mask defaults accepts 2D [batch, seq_len] matrix.        
         hidden_size = self.layer.config.hidden_size
-        # print(self.layer.config)
-        # self.classify = nn.Linear(input_dim, len(vocab))
+        # Implement bert layer
+
         self.classify = nn.Linear(hidden_size, len(vocab))
         self.dropout = nn.Dropout(0.1)
         self.loss = nn.functional.cross_entropy
@@ -147,16 +147,17 @@ def calc_perplexity(sentence, model, vocab, window_size):
 
 def train(corpus_path, save_weight=True):
     epoch_num = 20        #训练轮数
-    batch_size = 64       #每次训练样本个数
-    train_sample = 50000   #每轮训练总共训练的样本总数
-    char_dim = 256        #每个字的维度
+    batch_size = 128       #每次训练样本个数
+    train_sample = 10000   #每轮训练总共训练的样本总数
+    char_dim = 768        #每个字的维度
     window_size = 10       #样本文本长度
     vocab = build_vocab("vocab.txt")       #建立字表
     corpus = load_corpus(corpus_path)     #加载语料
+    learning_rate = 1e-3 # 学习率
     model = build_model(vocab, char_dim)    #建立模型
     if torch.cuda.is_available():
         model = model.cuda()
-    optim = torch.optim.Adam(model.parameters(), lr=0.01)   #建立优化器
+    optim = torch.optim.Adam(model.parameters(), lr=learning_rate)   #建立优化器
     print("文本词表模型加载完毕，开始训练")
     for epoch in range(epoch_num):
         model.train()
