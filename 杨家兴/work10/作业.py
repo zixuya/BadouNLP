@@ -29,12 +29,13 @@ class LanguageModel(nn.Module):
 
     def forward(self, x, attention_mask=None, y=None):
         # x = self.embedding(x)  #output shape:(batch_size, sen_len, input_dim)
-
-        x, _ = self.bert(input_ids=x, attention_mask=attention_mask) #output shape:(batch_size, sen_len, input_dim)
-        y_pred = self.classify(x) #output shape:(batch_size, sen_len, vocab_size)
         if y is not None:
+            x, _ = self.bert(input_ids=x, attention_mask=attention_mask) #output shape:(batch_size, sen_len, input_dim)
+            y_pred = self.classify(x) #output shape:(batch_size, sen_len, vocab_size)
             return self.loss(y_pred.view(-1, y_pred.shape[-1]), y.view(-1))
         else: 
+            x, _ = self.bert(x) #output shape:(batch_size, sen_len, input_dim)
+            y_pred = self.classify(x) #output shape:(batch_size, sen_len, vocab_size)
             return torch.softmax(y_pred, dim=-1)
         
 # 加载词表
@@ -58,6 +59,7 @@ def load_corpus(path):
 #从文本中截取随机窗口，前n个字作为输入，最后一个字作为输出
 def build_sample(vocab, window_size, corpus):
     start = random.randint(0, len(corpus) - 1 - window_size)
+    # 自监督任务，target从input里获取
     end = start + window_size
     window = corpus[start:end]
     target = corpus[start+1:end+1] #输入输出错开一位
