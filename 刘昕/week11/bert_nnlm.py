@@ -19,7 +19,7 @@ from loader import load_data
 
 
 class LanguageModel(nn.Module):
-    def __init__(self, hidden_size, vocab_size, pretrain_model_path, content_max_len, title_max_len):
+    def __init__(self, hidden_size, vocab_size, pretrain_model_path, content_max_len):
         super(LanguageModel, self).__init__()
         # self.embedding = nn.Embedding(len(vocab), input_dim)
         # self.layer = nn.LSTM(input_dim, input_dim, num_layers=1, batch_first=True)
@@ -53,8 +53,8 @@ class LanguageModel(nn.Module):
             return torch.softmax(y_pred, dim=-1)
 
 #建立模型
-def build_model(pretrain_model_path, content_max_len, title_max_len):
-    model = LanguageModel(768, 21128, pretrain_model_path, content_max_len, title_max_len)
+def build_model(pretrain_model_path, content_max_len):
+    model = LanguageModel(768, 21128, pretrain_model_path, content_max_len)
     return model
 
 #文本生成测试代码
@@ -67,10 +67,12 @@ def generate_sentence(sentence, model, tokenizer, content_max_len, title_max_len
     pred_title = ''
     pred_char = ''
     with torch.no_grad():
-        while len(pred_title) < title_max_len and pred_char != "[SEP]":
+        while True:
             y = model(input_ids)[0][-1]
             index = sampling_strategy(y)
             pred_char = tokenizer.decode([index])
+            if pred_char == "[SEP]":
+                break
             pred_title += pred_char
             pred_id = torch.LongTensor([[index]])
             input_ids = torch.cat((input_ids, pred_id), dim=1)
@@ -93,8 +95,8 @@ def sampling_strategy(prob_distribution):
 
 
 def train(save_weight=False):
-    epoch_num = 25        #训练轮数
-    batch_size = 20       #每次训练样本个数
+    epoch_num = 50        #训练轮数
+    batch_size = 25       #每次训练样本个数
     content_max_len = 120
     title_max_len = 30
     learning_rate = 0.001  #学习率
@@ -104,7 +106,7 @@ def train(save_weight=False):
     tokenizer = BertTokenizer.from_pretrained(pretrain_model_path)
 
     train_data  = load_data(batch_size, sample_path, tokenizer, content_max_len, title_max_len)
-    model = build_model(pretrain_model_path, content_max_len, title_max_len)    #建立模型
+    model = build_model(pretrain_model_path, content_max_len)    #建立模型
     if torch.cuda.is_available():
         model = model.cuda()
     optim = torch.optim.Adam(model.parameters(), lr=learning_rate)   #建立优化器
@@ -131,12 +133,11 @@ def train(save_weight=False):
 def evaluate():
     tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
     content_max_len = 120
-    title_max_len = 30
     pretrain_model_path = 'bert-base-chinese'
-    model = build_model(pretrain_model_path, content_max_len, title_max_len)    #建立模型
+    model = build_model(pretrain_model_path, content_max_len)    #建立模型
     model.load_state_dict(torch.load("model_mask.pth"))
     generate_sentence(
-        "雅安市荥经县新庙乡小学多名家长反映，该校保安用弹“雀雀”的手段体罚学生，经查，27名学生并无受伤，保安和校长被停职，教育、警方等部门介入调查。昨日，记者从荥经县证实，因涉嫌寻衅滋事，何远新已被荥经警方刑事拘留。 ",
+        "6月合格境外机构投资者(QFII)加快入市步伐。据中登公司发布的2013年6月份统计月报显示，QFII基金6月份在沪深两市分别新增开户14、15个A股股票账户，这29个账户让QFII在沪深两市的总账户数达到465个。 ",
         model, tokenizer, content_max_len)
 
 if __name__ == "__main__":
