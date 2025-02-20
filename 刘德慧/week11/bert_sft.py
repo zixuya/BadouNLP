@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 
 class LanguageModel(nn.Module):
 
-     def __init__(self, pretrain_model_path):
+    def __init__(self, pretrain_model_path):
         super(LanguageModel, self).__init__()
         # 使用预训练的BERT模型
         self.bert = BertModel.from_pretrained(pretrain_model_path,
@@ -101,7 +101,7 @@ def create_mask(s1, s2):
     for i in range(len_s2):
         # s2的当前token不能看到后面的s2 token
         mask[len_s1 + i, len_s1 + i + 1:] = 0
-    # 返回结果左上s1+2是全一矩阵，右下s2+1是下三角矩阵 
+    # 返回结果左上s1+2是全一矩阵，右下s2+1是下三角矩阵
     return mask
 
 
