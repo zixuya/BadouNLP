@@ -12,13 +12,14 @@ from model import SiameseNetwork, choose_optimizer
 import logging
 import numpy as np
 import random
+from eavluate import Evaluate
 
 # 训练记录
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# 随机种子
+# 随机种子,保证数据的可复现性
 seed = Config["seed"]
 random.seed(seed)
 np.random.seed(seed)
@@ -45,7 +46,7 @@ def main(config):
     # 加载优化器
     optimizer = choose_optimizer(config,model)
     # 加载测试
-
+    evaluator = Evaluate(config,model,logger)
     # 进行训练
     for epoch in range(config["epoch"]):
         epoch += 1
@@ -63,14 +64,12 @@ def main(config):
             # 每半个批次输出,0,中间，最后
             if index % int(len(train_data)/2)==0:
                 logger.info(f"bath loss {loss}")
-
-
             loss.backward()
             optimizer.step()
         logger.info(f"epoch average loss :{np.mean(train_loss)}")
+        evaluator.eval(epoch)
         print(f'{"separation":=^50}')
         
-
     # 创建文件
     model_path = os.path.join(config["model_path"],f"epoch_{config['loss']}_{config['epoch']}.pth")
     # 储存到文件内

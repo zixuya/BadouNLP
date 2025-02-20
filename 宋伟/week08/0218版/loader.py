@@ -20,8 +20,8 @@ class MyDataSet(Dataset):
         super(MyDataSet, self).__init__()
         self.path = data_path  # 两种数据来源，训练集或
         self.config = config
-        self.vocab = load_vocab(config["vocab_path"])  # 加载字表
-        self.schema = load_schema(config["schema_path"])  # 加载标准问-索引
+        self.vocab = load_vocab(config["vocab_path"])  # 加载字表{word:index}
+        self.schema = load_schema(config["schema_path"])  # 加载标准问-索引 {standard_question:index}
         self.train_data_size = config["epoch_data_size"]
         self.data_type = None  # 表示数据是训练集还是测试集
         self.loss = config["loss"]
@@ -53,7 +53,7 @@ class MyDataSet(Dataset):
                     token_ids = torch.LongTensor(token_ids)
                     label_index = torch.LongTensor(
                         [self.schema[label]])  # 标量进行向量化
-                    self.data.append([token_ids, label_index])
+                    self.data.append([token_ids, label_index])    
         return
 
     def encode_sentence(self, text):
@@ -158,7 +158,9 @@ if __name__ == '__main__':
     # 典型的小批量的随机梯度下降策略
     for epoch in range(10):
         for i,batch_data in enumerate(dataloader):   # 每轮训练，随机从中取batch
+
             s1,s2,relative = batch_data
+            print(s1.shape)
             print(relative[-1])
         print(f'{"separation":=^50}')
         

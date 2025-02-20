@@ -78,14 +78,18 @@ class SiameseNetwork(nn.Module):
                 return self.sentence_encoder(s1)
         elif loss == "triplet_loss":
             # 进行训练时
+            if not s2:
+                return self.sentence_encoder(s1) # 单元素输入直接进行编码
             if target is not None:
                 a = self.sentence_encoder(s1)
                 p = self.sentence_encoder(s2)
                 n = self.sentence_encoder(target)
-                return self.loss(a,p,n)
+                return self.loss(a,p,n)   # 标准训练，计算loss
             # 仅输入两个，可以计算它们之间的相似度（距离）
             else:
-                return self.cosine_distance(a,p)
+                return self.cosine_distance(a,p)  # 计算距离
+
+
 
 
 
