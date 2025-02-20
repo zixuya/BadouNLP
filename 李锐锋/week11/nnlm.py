@@ -279,8 +279,8 @@ def train(corpus_path, save_weight=True):
         # print("=========\n第%d轮平均loss:%f" % (epoch + 1, np.mean(watch_loss)))
 
         # print(generate_sentence("北京明年拟推工作日半价观看电影[SEP]", model, vocab, window_size))
-        input_ids = tokenizer.encode("北京明年拟推工作日半价观看电影[SEP]", return_tensors="pt")
-        attention_mask = torch.ones(input_ids.shape, dtype=torch.long)
+        input_ids = tokenizer.encode("北京明年拟推工作日半价观看电影[SEP]", return_tensors="pt").to(device)
+        attention_mask = torch.ones(input_ids.shape, dtype=torch.long).to(device)
         title_end_idx = input_ids[0].tolist().index(tokenizer.encode("[SEP]")[1])
         attention_mask[0, :title_end_idx] = 0
         generated_ids = model.generate(input_ids=input_ids, attention_mask=attention_mask, max_length=512)
