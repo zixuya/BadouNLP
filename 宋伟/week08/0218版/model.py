@@ -111,7 +111,7 @@ class SiameseNetwork(nn.Module):
         else:
             diff = ap - an + margin.sequence() # [batch,1]
         out = diff[diff.gt(0)] # [baych,1],dtype = bool,[n]
-        return torch.mean(out)  # 这里的gt 是greater than,即返回批量数据的平均loss,即标量
+        return torch.mean(out)  # 这里的gt 是greater than,即返回批量数据的平均loss,即标量，=
 
 
 def choose_optimizer(config,model):
