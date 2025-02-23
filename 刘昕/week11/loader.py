@@ -21,9 +21,10 @@ class DataGenerator:
                 content = line["content"]
                 content_ids = self.tokenizer.encode(content, add_special_tokens=False, padding="max_length",
                                              max_length=self.content_max_len, truncation=True)
-                title_ids = self.tokenizer.encode(title, add_special_tokens=False, padding="max_length", max_length=self.title_max_len,
+                title_ids = self.tokenizer.encode(title + '[SEP]', add_special_tokens=False, padding="max_length", max_length=self.title_max_len,
                                               truncation=True)
-                input_ids = content_ids + [self.tokenizer.sep_token_id] + title_ids + [self.tokenizer.sep_token_id]
+                input_ids = content_ids + [self.tokenizer.sep_token_id] + title_ids
+                # print(input_ids)
                 data.append(torch.LongTensor(input_ids))
         return data
 
@@ -42,4 +43,4 @@ if __name__ == '__main__':
     from transformers import BertTokenizer
     tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
     dg = DataGenerator("sample_data.json", tokenizer, 120, 30)
-    print(dg[0].shape)
+    print(dg[0])
