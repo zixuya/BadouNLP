@@ -5,8 +5,6 @@ from transformers import BertModel
 def calculate_bert_parameters(model):
     # 基础参数获取
     num_layers = 12
-
-
     total_params = 0
 
     # 1. Embedding Layer
@@ -30,6 +28,10 @@ def calculate_bert_parameters(model):
         ffn_params = sum(p.numel() for p in ffn.parameters())
         output = layer.output
         output_params = sum(p.numel() for p in output.parameters())
+        print(f"第{i + 1}层参数:qkv： {qkv_params}")
+        print(f"第{i + 1}层参数:attn： {attn_params}")
+        print(f"第{i + 1}层参数:ffn： {ffn_params}")
+        print(f"第{i + 1}层参数:output： {output_params}")
 
         layer_params = qkv_params + attn_params + ffn_params + output_params
         print(f"第{i + 1}层参数: {layer_params}")
