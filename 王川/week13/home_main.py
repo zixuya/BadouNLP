@@ -8,6 +8,7 @@ from home_loader import load_data
 from home_model import TorchModel, choose_optimizer
 from home_evaluate import Evaluator
 from home_config import Config
+from peft import LoraConfig, get_peft_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -21,10 +22,27 @@ torch.cuda.manual_seed_all(seed)
 def main():
     train_data = load_data(Config["train_data_path"], Config)
     model = TorchModel(Config)
+
+    tuning_tactics = Config["tuning_tactics"]
+    if tuning_tactics == "lora_tuning":
+        peft_config = LoraConfig(
+            r=16,
+            lora_alpha=64,
+            lora_dropout=0.1,
+            target_modules=["query", "key", "value"],  # 精确匹配模块路径
+            modules_to_save=["linear", "lstm"]  # 确保自定义层可训练
+        )
+    model = get_peft_model(model, peft_config)
+    # print("Trainable parameters:")
+    # for name, param in model.named_parameters():
+    #     if param.requires_grad:
+    #         print(name)
+
     cuda_flag = torch.cuda.is_available()
     if cuda_flag:
         logger.info("GPU可以使用，将模型迁移到GPU上训练")
         model = model.cuda()
+
     optim = choose_optimizer(Config, model)
     evaluator = Evaluator(Config, model, logger)
     start_time = time.time()
