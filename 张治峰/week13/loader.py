@@ -31,7 +31,7 @@ class DataGenerator:
                     sentence += char
                     labels.append(self.schema[label])
                 input_ids = self.tokenizer.encode(sentence, max_length=self.max_length, padding="max_length",
-                                                  truncation=True)
+                                                  truncation=True,add_special_tokens=False)
                 self.sentences.append(sentence)
                 labels = self.padding(labels)
                 self.data.append([torch.LongTensor(input_ids),torch.LongTensor(labels)])
