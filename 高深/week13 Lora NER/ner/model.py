@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.optim import Adam, SGD
 from torchcrf import CRF
 from transformers import BertModel
+from peft import get_peft_model, LoraConfig, TaskType
 
 """
 建立网络模型结构
@@ -31,6 +32,18 @@ class TorchModel(nn.Module):
             self.layer = nn.LSTM(hidden_size, hidden_size, batch_first=True, bidirectional=True, num_layers=num_layers)
             self.classify = nn.Linear(hidden_size * 2, class_num) # bidirectional LSTM
                         
+        if config["use_lora"]:
+            self.lora_config = LoraConfig(
+                task_type=TaskType.TOKEN_CLS,
+                inference_mode=False,
+                r=8,
+                lora_alpha=16,              
+                target_modules=["query", "key", "value"],           
+                modules_to_save=["classifier"]       
+            )
+            self.layer = get_peft_model(self.layer, self.lora_config)
+            print(f"Model converted to LoRA. Trainable parameters: {self.layer.print_trainable_parameters()}")
+
         self.crf_layer = CRF(class_num, batch_first=True)
         self.use_crf = config["use_crf"]
         self.loss = torch.nn.CrossEntropyLoss(ignore_index=-1)  #loss采用交叉熵损失
@@ -62,10 +75,19 @@ class TorchModel(nn.Module):
 def choose_optimizer(config, model):
     optimizer = config["optimizer"]
     learning_rate = config["learning_rate"]
-    if optimizer == "adam":
-        return Adam(model.parameters(), lr=learning_rate)
-    elif optimizer == "sgd":
-        return SGD(model.parameters(), lr=learning_rate)
+    if config.get("use_lora", False) and config["model_type"] == "bert":
+        # Get only trainable parameters (LoRA params) to optimize
+        trainable_params = [p for n, p in model.named_parameters() if p.requires_grad]
+        if optimizer == "adam":
+            return Adam(trainable_params, lr=learning_rate)
+        elif optimizer == "sgd":
+            return torch.optim.SGD(trainable_params, lr=learning_rate)
+    else:
+        # Regular optimization (all parameters)
+        if optimizer == "adam":
+            return Adam(model.parameters(), lr=learning_rate)
+        elif optimizer == "sgd":
+            return torch.optim.SGD(model.parameters(), lr=learning_rate)
 
 
 if __name__ == "__main__":
