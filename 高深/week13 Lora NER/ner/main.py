@@ -45,6 +45,7 @@ def main(config):
             if cuda_flag:
                 batch_data = [d.cuda() for d in batch_data]
             input_id, labels = batch_data   #输入变化时这里需要修改，比如多输入，多输出的情况
+            print(input_id, labels)
             loss = model(input_id, labels)
             loss.backward()
             optimizer.step()

@@ -19,11 +19,12 @@ class DataGenerator:
     def __init__(self, data_path, config):
         self.config = config
         self.path = data_path
+        print(config['model_type'])
         if config["model_type"] == "bert":
             self.tokenizer = BertTokenizer.from_pretrained(config["bert_model"])
         else:
             self.vocab = load_vocab(config["vocab_path"])
-        self.config["vocab_size"] = len(self.vocab)
+            self.config["vocab_size"] = len(self.vocab)
         self.sentences = []
         self.schema = self.load_schema(config["schema_path"])
         self.load()

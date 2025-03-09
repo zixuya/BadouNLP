@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam, SGD
 from torchcrf import CRF
-from transformers import BertModel
+from transformers import BertModel, BertForTokenClassification
 from peft import get_peft_model, LoraConfig, TaskType
 
 """
@@ -15,19 +15,24 @@ class TorchModel(nn.Module):
     def __init__(self, config):
         super(TorchModel, self).__init__()
         hidden_size = config["hidden_size"]
-        vocab_size = config["vocab_size"] + 1
         class_num = config["class_num"]
+        print("class_num", class_num)
         num_layers = config["num_layers"]
 
         self.use_bert = (config["model_type"] == "bert")
         if self.use_bert:
-            self.layer = BertModel.from_pretrained(
+            # self.layer = BertModel.from_pretrained(
+            #     config["bert_model"], 
+            #     num_hidden_layers=num_layers,
+            #     return_dict=False)
+            self.layer = BertForTokenClassification.from_pretrained(
                 config["bert_model"], 
-                num_hidden_layers=num_layers,
+                num_labels=class_num,
                 return_dict=False)
             hidden_size = self.layer.config.hidden_size # use hidden size from bert model
             self.classify = nn.Linear(hidden_size, class_num) # bert output is mapped to hidden_size, not 2 * hidden_size
         else:
+            vocab_size = config["vocab_size"] + 1
             self.embedding = nn.Embedding(vocab_size, hidden_size, padding_idx=0) # not needed for bert
             self.layer = nn.LSTM(hidden_size, hidden_size, batch_first=True, bidirectional=True, num_layers=num_layers)
             self.classify = nn.Linear(hidden_size * 2, class_num) # bidirectional LSTM
