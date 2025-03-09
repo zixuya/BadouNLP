@@ -17,6 +17,20 @@ logger = logging.getLogger(__name__)
 模型训练主程序
 """
 
+def peft_wrapper(model):
+    from peft import get_peft_model, LoraConfig
+
+    lora_config = LoraConfig(
+        r=8,
+        lora_alpha=32,              
+        lora_dropout=0.1,
+        target_modules=["query", "key", "value"],           
+        # modules_to_save=["classifier"]       
+    )
+    # print(f"Model converted to LoRA. Trainable parameters: {model}")
+
+    return get_peft_model(model, lora_config)
+
 def main(config):
     #创建保存模型的目录
     if not os.path.isdir(config["model_path"]):
@@ -25,6 +39,11 @@ def main(config):
     train_data = load_data(config["train_data_path"], config)
     #加载模型
     model = TorchModel(config)
+    if config.get("use_lora", False):
+        total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        model = peft_wrapper(model)
+        lora_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"Model converted to LoRA. Trainable parameters: {lora_params} out of {total_params}")
     # 标识是否使用gpu
     cuda_flag = torch.cuda.is_available()
     if cuda_flag:
@@ -45,7 +64,6 @@ def main(config):
             if cuda_flag:
                 batch_data = [d.cuda() for d in batch_data]
             input_id, labels = batch_data   #输入变化时这里需要修改，比如多输入，多输出的情况
-            print(input_id, labels)
             loss = model(input_id, labels)
             loss.backward()
             optimizer.step()
@@ -55,7 +73,7 @@ def main(config):
         logger.info("epoch average loss: %f" % np.mean(train_loss))
         evaluator.eval(epoch)
     model_path = os.path.join(config["model_path"], "epoch_%d.pth" % epoch)
-    # torch.save(model.state_dict(), model_path)
+    torch.save(model.state_dict(), model_path)
     return model, train_data
 
 if __name__ == "__main__":
