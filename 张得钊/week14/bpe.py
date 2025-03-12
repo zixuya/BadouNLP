@@ -69,6 +69,13 @@ class BPE:
             tokens = self.merge(tokens, pair, idx)
         return tokens
 
+    def save_vocab(self, vocab_file):
+        """将词汇表保存到文件中"""
+        with open(vocab_file, 'w', encoding='utf-8') as f:
+            for idx in sorted(self.vocab.keys()):
+                token = self.vocab[idx]
+                f.write(f"{idx}\t{token.decode('utf-8', errors='replace')}\n")
+
 def merge_txt_files(directory, output_file):
     with open(output_file, 'w', encoding='utf-8') as outfile:
         # 遍历目录中的所有文件
@@ -90,3 +97,6 @@ bpe = BPE(corpus , vocab_size)
 text = "回音重踏, 技能描述：持续施法 - 上古巨神与他的灵体游魂一起践踏地面，对敌方单位造成伤害并使他们在原地昏迷。上古巨神造成物理伤害，灵体游魂造成魔法伤害。"
 print(bpe.encode(text))
 print(bpe.decode(bpe.encode(text)) == text)
+
+vocab_file = 'vocab.txt'  # 保存词汇表的文件名
+bpe.save_vocab(vocab_file)
