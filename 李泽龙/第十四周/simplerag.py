@@ -14,7 +14,7 @@ from bm25 import BM25
 
 #KIMI的api作为我们的大模型
 def call_large_model(prompt):
-    client = OpenAI(api_key= "sk-1R3IKxpl0CQAHiOTZRUIWHhpCEzTaqI2IhTj8ONVgp5KVZVD",
+    client = OpenAI(api_key= "sk-1R3IKxpl0CQA********TaqI2IhTj8O",
                     base_url = "https://api.moonshot.cn/v1",) # 填写您自己的APIKey
     
     response = client.chat.completions.create(
