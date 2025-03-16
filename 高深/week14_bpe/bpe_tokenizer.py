@@ -1,3 +1,4 @@
+from collections import Counter
 import os
 from typing import List, Dict, Tuple
 
@@ -28,15 +29,12 @@ class BPETokenizer:
         vocab_size = len(set(text))
         print(f"unique characters in training text (vocab size): {vocab_size}")
         tokens = text.encode("utf-8") # raw bytes
-        tokens = list(map(int, tokens)) # convert to a list of integers in range 0..255 
+        tokens = list(map(int, tokens)) # convert list of bytes to a list of integers in range 0..255 
         return tokens, vocab_size
 
     # step 2: count the frequency of each token
     def get_stats(self, ids: List[int]) -> Dict[Tuple[int, int], int]:
-        counts = {}
-        for pair in zip(ids, ids[1:]):
-            counts[pair] = counts.get(pair, 0) + 1
-        return counts
+        return Counter(zip(ids, ids[1:]))
 
     # step 3: merge the tokens with the highest frequency
     def merge(self, ids: List[int], pair: Tuple[int, int], idx: int) -> List[int]:
@@ -58,14 +56,14 @@ class BPETokenizer:
         num_merges = vocab_size - 256
         print(f"training BPE with {num_merges} merges")
 
-        merges = {} # (int, int) -> int 相邻两个token的合并
+        merges = {} # (int, int) -> int. map of merges: key=(token i, token i+1), value=merged new token id
         progress = 0
         for i in range(num_merges):
-            stats = self.get_stats(ids)
-            pair = max(stats, key=stats.get)
+            stats = self.get_stats(ids) # get 2-gram frequency counts
+            pair = max(stats, key=stats.get) # find the most frequent pair
             idx = 256 + i
             # print(f"merging {pair} into a new token {idx}")
-            ids = self.merge(ids, pair, idx)
+            ids = self.merge(ids, pair, idx) # merge pair into new token indexed by idx, in place
             merges[pair] = idx
             
             # log progress
@@ -74,9 +72,9 @@ class BPETokenizer:
                 print(f"progress: {(progress / num_merges * 100):.2f}%")
 
         # build vocab using merges map
-        vocab = {idx: bytes([idx]) for idx in range(256)}
+        vocab = {idx: bytes([idx]) for idx in range(256)} # token index -> token byte
         for (p0, p1), idx in merges.items():
-            vocab[idx] = vocab[p0] + vocab[p1]
+            vocab[idx] = vocab[p0] + vocab[p1] # add merged tokens to vocab
         return ids, merges, vocab
 
 
