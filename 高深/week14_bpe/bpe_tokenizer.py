@@ -1,7 +1,3 @@
-# Build bpe tokenizer based on text data from /Heros/
-
-# read all text files from /Heros/ and merge them into a single text strig
-import math
 import os
 from typing import List, Dict, Tuple
 
@@ -104,6 +100,7 @@ class BPETokenizer:
 
 
 if __name__ == "__main__":
+    # Build bpe tokenizer based on text data from /Heros/
     bpe_tokenizer = BPETokenizer("./Heroes/")
 
     # test encode and decode
