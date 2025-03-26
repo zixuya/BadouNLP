@@ -16,6 +16,8 @@ import re
 
 class DailogueSystem:
     def __init__(self):
+        self.start_nodes = []  
+        self.repeat_node = "Nonenode"
         self.load()
     
     def load(self):
@@ -30,6 +32,10 @@ class DailogueSystem:
         scenario_name = scenario_file.split(".")[0]
         for node in self.scenario:
             self.nodes_info[scenario_name + node["id"]] = node
+            if node["action"] == "REPEAT":
+                self.repeat_node = scenario_name + node["id"]
+            if "start" in node and node["start"]:
+                self.start_nodes.append(scenario_name + node["id"])
             if "childnode" in node:
                 node["childnode"] = [scenario_name + childnode for childnode in node["childnode"]]
 
@@ -45,6 +51,9 @@ class DailogueSystem:
             #     self.slot_to_qv[slot] = []
             self.slot_to_qv[slot] = [query, values]
 
+    def get_start_nodes(self):
+        return self.start_nodes
+    
     def nlu(self, memory):
         # 自然语言理解模块，包括意图识别和槽位填充
         memory = self.intent_recognition(memory)
@@ -100,7 +109,7 @@ class DailogueSystem:
 
     def dpo(self, memory):
         #如果require_slot为空，则执行当前节点的操作,否则进行反问
-        if memory["hit_node"] == "scenario-买衣服node5":
+        if memory["hit_node"] == self.repeat_node:
             memory["policy"] = "repeat"
         elif memory["require_slot"] is None:
             memory["policy"] = "reply"
@@ -136,24 +145,18 @@ class DailogueSystem:
     def generate_response(self, query, memory):
         memory["query"] = query
         memory = self.nlu(memory)
-        print(memory)
         memory = self.dst(memory) # dialogue state tracking
-        print(memory)
         memory = self.dpo(memory) # dialogue policy optimization
-        print(memory)
         memory = self.nlg(memory) # natural language generation
-        print(memory)
         return memory
-
 
 
 if __name__ == '__main__':
     ds = DailogueSystem()
-    print(ds.slot_to_qv)
-    memory = {"available_nodes":["scenario-买衣服node1"]}  #默认初始记忆为空
+    memory = {}  #默认初始记忆为空
+    memory["available_nodes"] = ds.get_start_nodes()
     while True:
-        # query = "你好，我想订一张从北京到上海的机票"
         query = input("User：")
         memory = ds.generate_response(query, memory) #memory经常成为dialogue state
         print("System:", memory["response"])
-
+        
