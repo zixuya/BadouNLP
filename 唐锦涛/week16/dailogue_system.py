@@ -130,6 +130,12 @@ class DailogueSystem:
         else:
             slot = memory["require_slot"]
             memory["response"] = self.slot_to_qv[slot][0]
+        memory = self.repeat_response(memory)
+        return memory
+    
+
+    def repeat_response(self, memory):
+        # 根据重听的状态调整回复
         if memory['repeat']:
             if 'repeat_response' in memory:
                 memory['response'] = memory['repeat_response']
@@ -138,6 +144,7 @@ class DailogueSystem:
         else:
             memory['repeat_response'] = memory["response"]
         return memory
+    
 
     def fill_in_template(self, response, memory):
         slot_list = self.nodes_info[memory["hit_node"]].get("slot", [])
@@ -162,6 +169,7 @@ if __name__ == '__main__':
     print(ds.slot_to_qv)
     memory = {"available_nodes":["scenario-买衣服node1"]}  #默认初始记忆为空
     while True:
+        # query = "你好，我想订一张从北京到上海的机票"
         print("memory: ", memory)
         query = input("User：")
         memory = ds.generate_response(query, memory) #memory经常成为dialogue state
